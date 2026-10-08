@@ -1,0 +1,31 @@
+homeurl=$(get_homeurl)
+
+echo "\
+	<div id='connection-lost-message' class='hidden'>
+		<div id='connection-lost-message-text'></div>
+	</div>
+	<nav id='app-header'>
+		<div class='container'>
+			<div class='row'>
+				<div class='col-md-6 pull-left'><a href='$homeurl'><img class='logo' src='img/amplifi_logo.png' alt=''><span id='responsive-page-title'></span></a></div>
+				<div class='col md-6 pull-right'>
+"
+if [ "$SESSION" != "invalid" ]; then
+echo "\
+					<a class='blue' id='push-right' href='login.php?out=1'>Logout</a>
+"
+fi
+if [ ! -f "/etc/init.d/recovery" ]; then
+	if [ "$(uci get ajconfd.@device_config[0].node_role)" = "router" -a "$(get_setup_done)" = "1" ]; then
+		echo "\
+					<button class='btn-support' type='button' onclick=\"location.href='info.php';\">System info</button>"
+	fi
+
+	echo "\
+					<button class='btn-support node--notification-holder' type='button' onclick=\"location.href='support.php';\">Support<span class='node--notification'></span></button>
+				</div>
+			</div>
+		</div>
+	</nav>
+"
+fi

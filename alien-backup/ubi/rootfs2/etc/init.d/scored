@@ -1,0 +1,86 @@
+#!/bin/sh /etc/rc.common
+START=99
+
+USE_PROCD=1
+
+DIR="/usr/bin"
+BIN="scored"
+
+_radio_to_phy()
+{
+    local radio=$1
+
+    echo "phy${radio: -1}"
+}
+
+_find_iface()
+{
+
+    local CPU=`cat /proc/ubnthal/system.info | grep cpu= | cut -d '=' -f2`
+    local radio=$1
+    local path
+    local iface=""
+
+    case $CPU in
+        IPQ8074A|IPQ8074)
+            iface=`_radio_to_phy $radio`
+        ;;
+        *)
+            config_get path ${radio} path
+            [ -n "${path}" ] || {
+                echo "Couldn't find /sys/devices radio path"
+                return 1
+            }
+
+           iface=`ls /sys/devices/${path}/ieee80211`
+           [ -n ${iface} ] || {
+               echo "Couldn't find phy at ${path}"
+               return 1
+           }
+
+        ;;
+    esac
+
+    ret=$iface
+}
+
+_scored_instance()
+{
+    local radio=$1
+    local is_enabled
+
+    # the scored is enabled by default
+    config_get_bool is_enabled "${radio}" "scored" 1
+    [ ${is_enabled} -eq 1 ] || return 1
+
+    _find_iface $radio
+    [ $? -eq 1 ] && return 1
+
+    local iface=$ret
+
+    [ -f /tmp/${BIN} ] && DIR="/tmp"
+    # TODO:
+    # remove -v before release
+    procd_open_instance
+    procd_set_param command "${DIR}/${BIN}" -f -p ${iface} -s
+    procd_set_param respawn 3600 5 5
+    procd_close_instance
+}
+
+boot() {
+    :
+}
+
+start_service() {
+    config_load wireless
+    config_foreach _scored_instance wifi-device
+}
+
+service_triggers() {
+    procd_add_reload_trigger wireless
+}
+
+reload_service() {
+    stop
+    start
+}

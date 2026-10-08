@@ -1,0 +1,10 @@
+
+config login
+	option username 'ubnt'
+	option password '$p$ubnt'
+	list read '*'
+	list write '*'
+
+config plugin 'inetcheck'
+        option dev_link 'eth4'
+        option dev_addr 'eth4'

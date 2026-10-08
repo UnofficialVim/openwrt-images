@@ -1,0 +1,42 @@
+#!/bin/sh
+
+extract_cfg()
+{
+	echo "<6>Configuration: extracting..." > /dev/kmsg
+
+	mkdir -p /tmp/persist
+
+	cfg.sh read &> /dev/kmsg
+
+	mkdir -p /tmp/persist/etc/misc
+	mkdir -p /tmp/persist/etc/ssl/private
+	mkdir -p /tmp/persist/etc/ssl/certs
+
+	echo "<6>Configuration: files ready" > /dev/kmsg
+}
+
+do_extract_cfg()
+{
+	. /lib/functions/board.sh
+
+	case "$(board_name)" in
+	afi-*)
+		# Get prev FW version for configuration migration
+		echo "none" > /tmp/prev_cfg_fw_ver
+		cfg_tool -c &> /dev/kmsg
+		[ "$?" -eq "0" ] && uh-fw-tool -s > /tmp/prev_cfg_fw_ver
+
+		extract_cfg
+		;;
+
+	ubiquiti,afi-aln*)
+		extract_cfg
+		;;
+
+	*)
+		echo "Configuration: unknown board $(board_name)" > /dev/kmsg
+		;;
+	esac
+}
+
+boot_hook_add preinit_main do_extract_cfg

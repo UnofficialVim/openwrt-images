@@ -1,0 +1,9 @@
+#!/bin/sh
+
+. /lib/functions/afi.sh
+
+[ $(afi_get_eth_uplink_port) = "$PORT" ] || exit 0
+if [ "$ACTION" = "up" ]; then
+	kill -USR1 `cat /var/run/udhcpc-*.pid`
+	kill -USR2 `pidof odhcp6c`
+fi

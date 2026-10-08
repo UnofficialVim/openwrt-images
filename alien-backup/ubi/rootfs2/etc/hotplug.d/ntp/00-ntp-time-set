@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if [ "$ACTION" = stratum ]; then
+    touch /tmp/ntp_time_set
+fi

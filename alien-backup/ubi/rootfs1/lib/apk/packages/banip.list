@@ -1,0 +1,12 @@
+/etc/banip/banip.allowlist
+/etc/banip/banip.blocklist
+/etc/banip/banip.countries
+/etc/banip/banip.custom.feeds
+/etc/banip/banip.feeds
+/etc/banip/banip.tpl
+/etc/config/banip
+/etc/init.d/banip
+/etc/uci-defaults/95-banip-housekeeping
+/usr/bin/banip-service.sh
+/usr/lib/banip-functions.sh
+/www/cgi-bin/banip

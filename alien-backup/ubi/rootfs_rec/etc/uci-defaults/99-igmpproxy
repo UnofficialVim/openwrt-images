@@ -1,0 +1,19 @@
+#!/bin/sh
+
+#
+# IGMP configuration must be updated together with firmware
+# If versions do not match, lets unroll new default config
+# and apply previous configurable values.
+#
+
+orig_version=`uci get 'igmpproxy.main.version'`
+
+# Version here must match default config version in ../config/igmpproxy
+# Change both every time when ../config/igmpproxy is updated
+
+new_version="2018-11-30-001"
+
+if [ "$orig_version" != "$new_version" ]; then
+  tar -zxf /etc/default.tar.gz etc/config/igmpproxy -C /
+  uci commit
+fi

@@ -1,0 +1,3 @@
+/etc/uci-defaults/zeroconf
+/lib/netifd/zcip.script
+/lib/netifd/proto/zeroconf.sh

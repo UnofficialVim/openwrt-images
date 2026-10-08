@@ -1,0 +1,32 @@
+#
+# reserved values
+#
+128	prelocal
+255	local
+254	main
+253	default
+0	unspec
+#
+# local
+#
+#1	inr.ruhep
+
+64	ml
+65	mlhlpr
+
+# Router-to-router tables
+71	r2r1
+72	r2r2
+73	r2r3
+74	r2r4
+75	r2r5
+76	r2r6
+77	r2r7
+78	r2r8
+79	r2r9
+80	r2r10
+81	r2r11
+82	r2r12
+83	r2r13
+84	r2r14
+85	r2r15

@@ -1,0 +1,5 @@
+/usr/sbin/cfg80211tool.1
+/etc/init.d/cnss_diag
+/usr/sbin/cnss_diag
+/usr/local/lib/libqca_nl80211_wrapper.so
+/etc/config/cnss_diag

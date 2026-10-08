@@ -1,0 +1,10 @@
+Package: webui-recovery
+Version: 15b0abc9ce5c084651c82a99eb81d484b642424c-9
+Depends: libc, uhttpd, uh-fw-tool
+Source: package/ubiquiti/webui
+SourceName: webui-recovery
+Section: Ubiquiti
+Maintainer: Roman Yeryomin <roman@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 45121
+Description:  Contains only firmware update

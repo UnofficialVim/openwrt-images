@@ -1,0 +1,27 @@
+#!/bin/sh /etc/rc.common
+
+START=13
+
+USE_PROCD=1
+NAME=uictld
+PROG=/usr/bin/uictld
+
+start_service() {
+    . /lib/functions/board.sh
+    case $(board_name) in
+        afi-pb)
+            ubus -t 40 wait_for pwrbox
+            ;;
+        *)
+            ;;
+    esac
+
+    procd_open_instance
+    procd_set_param command "$PROG" -f
+    procd_set_param respawn 3600 5 0
+    procd_close_instance
+}
+
+stop() {
+    service_stop $PROG
+}

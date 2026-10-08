@@ -1,0 +1,214 @@
+#!/bin/sh
+
+SECTIONS_OPT="debug wifi-crash-dump"
+SECTIONS="uictld clients perf \
+ perf-log-1-1 perf-log-1-2 \
+ perf-log-15-1 perf-log-15-2 \
+ perf-log-1440-1 perf-log-1440-2 \
+ speedtest firmware $SECTIONS_OPT"
+DATADIR=/tmp/stats
+
+# Default to 256KB per section
+P_SPACE=256
+
+parse_args() {
+    usage() {
+        echo -e "Usage: $0 [-m] [-w] [-r] [-e] <section> [-a] <KB> [-c]\n" \
+             "\t-m <section> meta info\n" \
+             "\t-w <section> write to section from stdin\n" \
+             "\t-o <section> append to section from stdin\n" \
+             "\t-r <section> read out section to stdout\n" \
+             "\t-e <section> erase section\n" \
+             "\t-a <KB> request space (to be used with -w)\n" \
+             "\t-c erase all sections"
+        exit 1
+    }
+
+    while [ "$1" ]; do
+        case "$1" in
+            -m) P_META=1; P_SECTION=$2; shift 2 ;;
+            -w) P_WRITE=1; P_SECTION=$2; shift 2 ;;
+            -o) P_APPEND=1; P_SECTION=$2; shift 2 ;;
+            -r) P_READ=1; P_SECTION=$2; shift 2 ;;
+            -e) P_ERASE=1; P_SECTION=$2; shift 2 ;;
+            -a) P_REQ_SPACE=1; P_SPACE=$2; shift 2 ;;
+            -c) P_ERASE_ALL=1; shift ;;
+            *) usage ;;
+        esac
+    done
+
+    # Check only one action is specified
+    [ $(echo "$P_META $P_WRITE $P_APPEND $P_READ $P_ERASE $P_ERASE_ALL" | wc -w) -eq 1 ] ||
+        usage
+
+    # Filter leading and trailing whitespace
+    P_SECTION=$(echo -n $P_SECTION | xargs)
+
+    [ -z $P_ERASE_ALL ] && {
+        # Check if section is valid
+        local section_invalid=
+        echo "$P_SECTION" | grep -q " " && section_invalid=1
+        echo " $SECTIONS " | grep -vq " $P_SECTION " && section_invalid=1
+        [ $section_invalid ] && {
+            echo "Invalid section $P_SECTION. Valid sections:"
+            for s in $SECTIONS; do
+                echo "  $s"
+            done
+            exit 1
+        }
+
+        # Check if optional section
+        echo " $SECTIONS_OPT " | grep -q " $P_SECTION " && P_OPT=1
+    }
+}
+
+check_get_space() {
+    check_space() {
+        [ "$P_SPACE" -lt `df -kP $DATADIR | awk 'FNR==2 {print $4}'` ]
+        return $?
+    }
+
+    # Remove files that do not belong to any section / .new postfixed
+    # leftovers from interrupted writes
+    for f in $DATADIR/*; do
+        echo " $SECTIONS " | grep -vq " $(basename $f) " && rm -rf $f
+    done
+
+    check_space && return 0
+
+    for o in $SECTIONS_OPT; do
+        [ -e $DATADIR/$o ] && {
+            (>&2 echo "Deleting $o for more space")
+            rm -rf $DATADIR/$o
+        }
+
+        check_space && return 0
+    done
+
+    return 1
+}
+
+fs_access_lock() {
+    eval "exec 9>/var/lock/stats_tool.lock"
+    flock $1 9
+    trap 'flock -u 9' INT TERM EXIT    
+}
+
+
+# Action starts here
+
+parse_args $@
+
+[[ "$P_READ" || "$P_META" ]] && {
+    fs_access_lock -s
+
+    file=$DATADIR/$P_SECTION
+
+    [ ! -f $file ] && {
+        (>&2 echo "Not written")
+        exit 0
+    }
+
+    # Read meta data
+    [ $P_META ] && {
+        ls --full-time $file
+        for a in `attr -ql $file`; do
+            echo "$a:" `attr -qg "$a" $file`
+        done
+    }
+
+    # Read contents
+    [ $P_READ ] && {
+        cat $file
+    }
+
+    exit 0
+}
+
+[ $P_ERASE ] && {
+    fs_access_lock -x
+    rm -f $DATADIR/$P_SECTION
+    exit 0
+}
+
+[ $P_ERASE_ALL ] && {
+    fs_access_lock -x
+    rm -f $DATADIR/$P_SECTION
+    exit 0
+}
+
+[[ "$P_WRITE" || "$P_APPEND" ]] && {
+    fs_access_lock -x
+    file=$DATADIR/$P_SECTION
+    file_new=$DATADIR/$P_SECTION.new
+
+    # Appending / optional sections use single file
+    [[ "$P_OPT" || "$P_APPEND" ]] && {
+        file_new=$file
+    }
+
+    # Truncate optional section before space calculation
+    [[ "$P_OPT" && "$P_WRITE" ]] && {
+        [ -f $file ] && : > $file
+    }
+
+    # Check available space
+    check_get_space || {
+        (>&2 echo "No space available")
+        exit 1
+    }
+
+    # Append contents
+    [ $P_APPEND ] && {
+        cat - >> $file_new || {
+            (>&2 echo "Append error")
+            exit 1
+        }
+    }
+
+    # Write contents
+    [ $P_WRITE ] && {
+        cat - > $file_new || {
+            (>&2 echo "Write error")
+            exit 1
+        }
+    }
+
+    # Copy attributes
+    [ $file != $file_new ] && {
+        attrs=`attr -ql $file`
+        for a in $attrs; do
+            attr -qg $a $file | attr -qs $a $file_new
+        done
+    }
+
+    # Set new attributes
+    ntp_time_set=0
+    [ -f /tmp/ntp_time_set ] && ntp_time_set=1
+    uptime=`cat /proc/uptime`
+    fw_version=`ubus call firmware info | jsonfilter -e '@["current"]'`
+
+    write_count=`attr -qg "write_count" $file_new 2>/dev/null || echo 0`
+    [ $write_count -eq 0 ] && {
+        attr -qs "create.fw_version" -V "$fw_version" $file_new
+        attr -qs "create.ntp_time_set" -V "$ntp_time_set" $file_new
+        attr -qs "create.uptime" -V "$uptime" $file_new
+        attr -qs "write_count" -V 0 $file_new
+    }
+
+    attr -qs "modify.fw_version" -V "$fw_version" $file_new
+    attr -qs "modify.ntp_time_set" -V "$ntp_time_set" $file_new
+    attr -qs "modify.uptime" -V "$uptime" $file_new
+    attr -qs "write_count" -V "$(( $write_count + 1 ))" $file_new
+
+    # New file should be ready
+    fsync $file_new
+
+    # Use move for atomic update
+    [ $file != $file_new ] && {
+        mv $file_new $file
+        fsync $file
+    }
+
+    exit 0
+}

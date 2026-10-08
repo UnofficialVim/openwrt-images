@@ -1,0 +1,3 @@
+/lib/modules/4.4.60/ubnthal.ko
+/etc/modules.d/01-ubnt-hal
+/etc/uci-defaults/01_hostname

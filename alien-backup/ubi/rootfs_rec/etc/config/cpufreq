@@ -1,0 +1,2 @@
+config cpufreq 'policy0'
+	option scaling_governor 'ondemand'

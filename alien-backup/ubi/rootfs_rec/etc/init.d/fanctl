@@ -1,0 +1,61 @@
+#!/bin/sh /etc/rc.common
+
+START=11
+
+boot() {
+	. /lib/functions/afi.sh
+
+	# reset pwm1_enable state to manual
+	echo 1 > /sys/class/hwmon/hwmon0/pwm1_enable
+
+	# reverse pwm polarity for old samples
+	case "$(afi_board_shortname)" in
+	"AFi-ALN-R")
+		[ $(afi_board_bomrev) -lt 34 ] && echo 1 > /sys/class/hwmon/hwmon0/pwm1_polarity
+		;;
+	"AFi-ALN-P")
+		[ $(afi_board_bomrev) -lt 23 ] && echo 1 > /sys/class/hwmon/hwmon0/pwm1_polarity
+		;;
+	esac
+
+	# disable fan
+	echo 0 > /sys/class/hwmon/hwmon0/pwm1
+
+	# set look-up table temperature hysteresis to 1C
+	echo 1 > /sys/class/hwmon/hwmon0/pwm1_auto_point_hyst
+
+	# configure look-up table for temp2 sensor
+	# currently we have approximately these temperatures
+	#   load      fan on   fan off
+	# 100% usr    58-59C   76-77C
+	# 95% idle    52-53C   72-73C
+	# with setting below fan should stay mostly on point3
+	# switching to point4 under some load
+
+	echo 58000 > /sys/class/hwmon/hwmon0/pwm1_auto_point1_temp
+	echo 31 > /sys/class/hwmon/hwmon0/pwm1_auto_point1_pwm
+
+	echo 61000 > /sys/class/hwmon/hwmon0/pwm1_auto_point2_temp
+	echo 63 > /sys/class/hwmon/hwmon0/pwm1_auto_point2_pwm
+
+	echo 64000 > /sys/class/hwmon/hwmon0/pwm1_auto_point3_temp
+	echo 95 > /sys/class/hwmon/hwmon0/pwm1_auto_point3_pwm
+
+	echo 68000 > /sys/class/hwmon/hwmon0/pwm1_auto_point4_temp
+	echo 127 > /sys/class/hwmon/hwmon0/pwm1_auto_point4_pwm
+
+	echo 72000 > /sys/class/hwmon/hwmon0/pwm1_auto_point5_temp
+	echo 159 > /sys/class/hwmon/hwmon0/pwm1_auto_point5_pwm
+
+	echo 76000 > /sys/class/hwmon/hwmon0/pwm1_auto_point6_temp
+	echo 191 > /sys/class/hwmon/hwmon0/pwm1_auto_point6_pwm
+
+	echo 80000 > /sys/class/hwmon/hwmon0/pwm1_auto_point7_temp
+	echo 223 > /sys/class/hwmon/hwmon0/pwm1_auto_point7_pwm
+
+	echo 85000 > /sys/class/hwmon/hwmon0/pwm1_auto_point8_temp
+	echo 255 > /sys/class/hwmon/hwmon0/pwm1_auto_point8_pwm
+
+	# enable look-up table, table values and pwm1 are locked
+	echo 2 > /sys/class/hwmon/hwmon0/pwm1_enable
+}

@@ -1,0 +1,2 @@
+/etc/modules.d/hwmon-lm63
+/lib/modules/4.4.60/lm63.ko

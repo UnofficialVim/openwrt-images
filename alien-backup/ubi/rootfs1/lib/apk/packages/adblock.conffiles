@@ -1,0 +1,4 @@
+/etc/config/adblock
+/etc/adblock/adblock.allowlist
+/etc/adblock/adblock.blocklist
+/etc/adblock/adblock.custom.feeds

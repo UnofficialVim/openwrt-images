@@ -1,0 +1,10 @@
+Package: kmod-qca-wifi
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+cb9c67a225-1
+Depends: kernel (=ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), libgcc1, libc, wireless-tools, librt, libnl200, libxml2, ip-full, kmod-ubnt-hal, kmod-qca-nss-drv, qca-wifi-fw-headers, qca-wifi-hk-fw, qca-wifi-hk-fw_v2, qca-common-tools, qca-qsdk-bin
+Source: package/qca/qca-wifi
+SourceName: kmod-qca-wifi
+Section: QCA
+Maintainer: Dmitri Arekhta
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 3715384
+Description:  QCA Wireless LAN Driver

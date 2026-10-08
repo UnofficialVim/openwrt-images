@@ -1,0 +1,380 @@
+#!/bin/sh
+
+. html-start
+. head-start
+
+ptype="$(get_ptype)"
+
+if [ "$(is_teleport)" ] && [ "$(ubus call ajconfd.Device GetPairing | grep -q 'router'; echo $?)" = "0" ] && [ "$(uci get ajconfd.@device_config[0].ml_isolation_mode 2>/dev/null)" ]; then
+	echo 'continue' > /dev/null
+elif [ "$(get_setup_done)" != "1" ]; then
+	echo 'continue' > /dev/null
+else
+	echo "<meta http-equiv=\"refresh\" content=\"0;URL='download.php'\" />"
+	. head-stop
+	. html-stop
+	exit
+fi
+
+if [ "$REQUEST_METHOD" = "POST" ]; then
+	read QUERY_STRING
+	ssid=$(getvar "$QUERY_STRING" "ssid")
+	admpassword=$(getvar "$QUERY_STRING" "admpassword") # for P-HD and PB open network setup
+	timezone=$(getvar "$QUERY_STRING" "timezone") # for P-HD and PB open network setup
+fi
+
+
+if [ ! "$ssid" ] && [ -f "$SETUPSSID" ]; then
+	QUERY_STRING="$(cat $SETUPSSID)"
+	ssid=$(getvar "$QUERY_STRING" "ssid")
+	[ ! "$admpassword" ] && admpassword=$(getvar "$QUERY_STRING" "admpassword")
+	[ ! "$timezone" ] && timezone=$(getvar "$QUERY_STRING" "timezone")
+fi
+
+freq=$(getvar "$QUERY_STRING" "freq")
+freqdual=$(getvar "$QUERY_STRING" "freqdual")
+open=$(getvar "$QUERY_STRING" "open")
+band=$(getvar "$QUERY_STRING" "band")
+
+[ "$freqdual" = "undefined" ] && freqdual=''
+[ "$open" = "true" -o "$open" = "1" ] && open="1" || open=''
+
+if [ -z "$ssid" -o -z "$freq" ]; then
+	echo "<meta http-equiv=\"refresh\" content=\"0;URL='network-list.php'\" />"
+	. head-stop
+	. html-stop
+	exit
+fi
+
+invalid=$(getvar "$QUERY_STRING" "invalid")
+
+log_debug "setup.php \"$ssid\" \"$band\" \"$freq\" \"$freqdual\"  \"$open\""
+
+if [ "$open" = "1" ]; then # if open network, save settings
+	echo "freq=$freq&band=$band&ssid=$ssid&open=$open&wifipassword=&admpassword=$admpassword&timezone=$timezone&mode=2" > $SETUPFILE
+
+	if [ "$admpassword" ] || [ "$(is_teleport)" ]; then # administrative password for Teleport is not required
+		echo "<meta http-equiv=\"refresh\" content=\"0;URL='connect.php'\" />"
+		. head-stop
+		. html-stop
+		exit
+	fi
+
+fi
+
+echo "ssid=$ssid&freq=$freq&freqdual=$freqdual&band=$band&open=$open" > "$SETUPSSID"
+
+cat head.html
+. head-stop
+
+echo "<body>"
+
+. body-nav
+
+echo "
+
+	<div class='app-section-title'>
+		<div class='container'>
+			<div class='row'>
+				<div class='col-md-16 callout'>
+					<h1>"
+						get_setup_title
+echo "</h1>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class='container'>
+		<div class='row'>
+			<div class='col-app-container col-xs-12'>
+				<div class='base-modal'>"
+					get_modal_header "$ptype"
+echo "
+					<div class='item-image'></div>
+						<div class='app-t'>
+							<div class='app-tr'>
+								<div class='app-tc'>
+									<div class='item-title'>$PNAME</div>
+									<div class='item-id'>$AFIID</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class='base-modal-content'>"
+
+if [ "$open" = "1" ] ; then
+	echo "
+						<div class='' id='texxxt'>
+
+								<div class='generic-group'>
+
+									<div class='base-modal-content' id='name-your-wireless-network' style='padding-bottom: 35px;'>
+										<div class='form-header'>
+											<div class='item-icon'></div>
+											<div class='item-title'>Secure "$(get_ptype)"</div>
+											<div class='item-description'>Choose password for "$(get_ptype)" administration</div>
+										</div>
+										<div class='form-wrap'>
+											<form method='POST' id='name-your-wireless-network-form' onSubmit='getAdmPasswordValues(); return false;'>
+											<input type='hidden' name='token' value='$TOKEN'>
+											<input type='hidden' id='tz' name='timezone' value=''>
+												<div class='group'>
+													<input type='password' name='admpassword' id='admpassword' spellcheck='false' autocomplete='off' required onkeyup='getAdmPasswordValues(true);'>
+													<span class='highlight'></span>
+													<span class='bar'></span>
+													<label class='has-icon'><img src='img/key-icon.svg' class='icon' alt=''>Create Your Administrative Password</label>
+												</div>
+												<div class='group group-variation-03'>
+													<button class='btn name-your-wireless-network-btn' id='btn-createAdmPassword' type='submit' style='width: 100%; text-transform: uppercase;'>Continue setup</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src='js/jstz.min.js'></script>
+	<script>
+
+	function isASCII( str, ext ) {
+		return ( ext ? /^[\x00-\xFF]*$/ : /^[\x00-\x7F]*$/).test( str );
+	}
+
+	function validatesAdmPassword( str ) {
+		var pass = false;
+		if ( isASCII( str, false ) ) {
+			if ( str.length >= 4 && str.length <= 63 ) {
+				pass = true;
+			}
+		}
+		return pass;
+	}
+
+	function getAdmPasswordValues( justValidate ) {
+		var form = document.getElementById('name-your-wireless-network-form');
+		//var pwdInput = form.querySelector('[name=admpassword]')
+		var pwdInput = document.getElementById('admpassword');
+
+		var pwd = pwdInput.value;
+		var failClassName = 'validation--fail';
+		var btn = document.getElementById('btn-createAdmPassword');
+		var pass = false;
+
+
+		if ( validatesAdmPassword( pwd ) ) {
+			pwdInput.classList.remove(failClassName);
+		} else {
+			if ( justValidate ) {
+				if ( pwd.length > 0 ) {
+					pwdInput.classList.add(failClassName);
+				} else {
+					pwdInput.classList.remove(failClassName);
+				}
+			} else {
+				pwdInput.classList.add(failClassName);
+			}
+		}
+
+		if ( validatesAdmPassword( pwd ) ) {
+			var pass = true;
+		}
+
+		if ( pass && !justValidate ) {
+			form.submit();
+		}
+	}
+
+	document.getElementById('tz').value = jstz.determine().name();
+	</script>
+"
+
+else
+	echo "
+						<div class='form-wrap from--enter-password' id='texxxt'>
+							<form id='main-form' method='post' onsubmit='checkPassword(checkPasswordCallback); return false;'>
+								<input type='hidden' name='token' value='$TOKEN'>
+								<div class='generic-group'>
+
+								<label class='from--label'>Please enter password for <span class='highlighted'>$ssid</span></label>
+								<div id='show-password-container'><input spellcheck='false' autocomplete='off' type='password' id='wifipassword' name='wifipassword' required autofocus><a href='javascript:;' id='show-password-trigger'></a></div>"
+
+	echo "
+									<span class='highlight'></span>
+									<span class='bar'></span>"
+
+if [ "$invalid" = "wifipassword" ]; then
+	echo "
+									<div class='error-text'>Incorrect WiFi password</div>"
+fi
+echo "
+								</div>
+								<input type='hidden' id='ssid' name='ssid' value=\"$ssid\">
+								<input type='hidden' id='freq' name='freq' value='$freq'>
+								<input type='hidden' id='freqdual' name='freq' value='$freqdual'>
+								<input type='hidden' id='band' name='band' value='$band'>
+								<input type='hidden' id='open' name='open' value='$open'>
+								<input type='hidden' id='tz' name='timezone' value=''>
+								<div class='group'>
+									<input class='cta-main' type='button' onclick='checkPassword(checkPasswordCallback)' value='Continue'>
+								</div>
+							</form>
+						</div>
+						<div id='from--enter-password--fail'></div>
+						<div id='from--enter-password--loading'></div>
+
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		var TELEPORT_GLOBAL_VARS = {};
+	</script>
+	<script src='js/jstz.min.js'></script>
+	<script src='js/clink.js'></script>
+	<script src='js/app.js?v=4'></script>
+	<script>
+		var showPasswordTrigger = document.getElementById('show-password-trigger');
+		var passwordInput = document.getElementById('wifipassword');
+		var passwordStateMain = document.getElementById('texxxt');
+		var passwordStateFail = document.getElementById('from--enter-password--fail');
+		var passwordStateLoading = document.getElementById('from--enter-password--loading');
+
+		document.getElementById(\"tz\").value = jstz.determine().name();
+
+		function resetPasswordState() {
+			passwordStateMain.classList.remove('hidden');
+			passwordStateFail.innerHTML = '';
+			passwordStateLoading.innerHTML = '';
+			passwordInput.value = '';
+			passwordInput.type = 'password';
+			showPasswordTrigger.classList.remove('active');
+			passwordInput.focus();
+		}
+
+rCount=0
+function checkPassword(callback){
+
+	passwordStateMain.classList.add('hidden');
+	passwordStateFail.innerHTML = '';
+	passwordStateLoading.innerHTML = '';
+	passwordInput.type = 'password';
+	showPasswordTrigger.classList.remove('active');
+
+	try {
+		var xhttp;
+		var freq = document.getElementById(\"freq\").value;
+		var freqdual = document.getElementById(\"freqdual\").value;
+		var band = document.getElementById(\"band\").value;
+		var ssid = document.getElementById(\"ssid\").value;
+		var open = document.getElementById(\"open\").value;
+		var tz = document.getElementById(\"tz\").value;
+		var wifipassword = \"\";
+		wifipasswordObj = document.getElementById(\"wifipassword\");
+		if (wifipasswordObj) {
+			wifipassword = wifipasswordObj.value;
+		}
+	} catch (e) {
+		window.location.href = 'setup.php';
+		return false;
+	}
+
+	document.getElementById(\"from--enter-password--loading\").innerHTML = \"\
+		<div class='loading'><img src='img/ring.gif' alt=''></div>\
+		<div class='loading-status'><p>Checking...</p><p id='wait'>Please wait</p></div>\
+	\";
+	xhttp=new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4) {
+			if (this.status == 200) {
+				rCount=0
+				callback(this);
+			} else if (this.status == 0) {
+				if (rCount < 3) {
+					rCount++;
+					checkPassword(callback);
+				}
+			}
+		}
+	};
+	xhttp.open('POST', 'cp.php', true);
+	xhttp.timeout = 20000;
+	xhttp.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+	xhttp.send(\"freq=\"+freq+\"&freqdual=\"+freqdual+\"&band=\"+band+\"&ssid=\"+encodeURIComponent(ssid)+\"&uss=\"+jsons(ssid).replace('=','%3D')+\"&wifipassword=\"+encodeURIComponent(wifipassword)+\"&uwp=\"+jsons(wifipassword).replace('=','%3D')+\"&pr=\"+TELEPORT_GLOBAL_VARS.passwordRevealTriggered+\"&timezone=\"+tz+\"&open=\"+open+\"&mode=2&token=$TOKEN\");
+}
+function checkPasswordCallback(xhttp) {
+
+	var reply = xhttp.responseText;
+	if (reply == 0) {
+		location.href = 'connect.php';
+	} else if (reply > 10) {
+		location.href = 'connect.php';
+	} else {
+		wrongPassword();
+	}
+}
+
+function wrongPassword() {
+		passwordStateMain.classList.add('hidden');
+		passwordStateFail.innerHTML = '';
+		passwordStateLoading.innerHTML = '';
+		passwordInput.type = 'password';
+		showPasswordTrigger.classList.remove('active');
+
+		document.getElementById(\"from--enter-password--fail\").innerHTML = \"\
+			<div class='success-message'>\
+			<h3 class='red'>Incorrect password</h3><br>\
+			<div class='group'>\
+			<input class='cta-main' type='button' value='Try different password' onclick=\\\"resetPasswordState();\\\">\
+			<input class='cta-main' type='button' value='Choose other Wi-Fi network' onclick=\\\"location.href='network-list.php';\\\">\
+			</div>\
+			</div>\
+		\";
+}
+
+function jsons(s) {
+   var json = JSON.stringify(s);
+   return json.replace(/[\u007f-\uffff]/g, function(c) {return '\\\\\\\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4);}).slice(1,-1);
+}
+
+function processState(xhttp) {
+	stateTimer();
+	offlineTimer();
+	try {
+		var arr = JSON.parse(xhttp.responseText);
+		teleport_status = arr.status;
+		if (teleport_status > 199) {
+			window.location.href = 'ml-setup-progress.php';
+		}
+	} catch (e) {}
+}
+"
+
+if [ "$(is_teleport)" ]; then echo "
+stateTimer();
+offlineTimer();
+
+"
+fi
+
+if [ "$invalid" = "password" ]; then
+echo "
+	wrongPassword();"
+fi
+echo "</script>"
+
+fi
+
+echo "</body>"
+
+. html-stop
+
+rm -f "$WIFIPASSWORDCHECKRESULT"

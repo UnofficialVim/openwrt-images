@@ -1,0 +1,10 @@
+Package: ubnt-zeroconf
+Version: 1.0.0-1
+Depends: libc, ubnt-meta, netifd, ip
+Source: package/ubiquiti/ubnt-zeroconf
+SourceName: ubnt-zeroconf
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 1144
+Description:  Adds MAC based zeroconf IP

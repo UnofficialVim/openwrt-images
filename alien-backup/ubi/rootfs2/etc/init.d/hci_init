@@ -1,0 +1,33 @@
+#!/bin/sh /etc/rc.common
+
+START=70
+
+BTDEV=/dev/ttyMSM1
+
+getmacstr()
+{
+	cat /proc/ubnthal/board | \
+		grep "eth0.macaddr" | \
+		awk -F "=" '{printf "%s",$2}' | \
+		awk -F ":" '{printf "0x%s 0x00 0x%s 0x%s 0x%s 0x00 0x%s 0x%s\n",$4,$6,$5,$3,$2,$1}'
+}
+
+start()
+{
+	local mac=$(getmacstr)
+
+	bccmd -t bcsp -b 115200 -d $BTDEV psset -r 0x1 $mac
+	bccmd -t bcsp -b 115200 -d $BTDEV psload -r /lib/firmware/csr8811/*.psr
+	hciattach -s 115200 /dev/ttyMSM1 bcsp 115200
+	hciconfig hci0 up
+}
+
+boot()
+{
+	start
+}
+
+stop()
+{
+	killall hciattach
+}

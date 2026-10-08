@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+
+START=90
+
+USE_PROCD=1
+NAME=fingerprintd
+PROG=/usr/sbin/fingerprintd
+
+start_service() {
+	# Wait until other services we depend on are initialized.
+	ubus -t 30 wait_for ajconfd
+
+	procd_open_instance
+	procd_set_param command nice -n -10 "$PROG"
+	# Allow unlimited restarts with 5 seconds interval
+	procd_set_param respawn 3600 5 0
+	procd_close_instance
+}
+

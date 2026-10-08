@@ -1,0 +1,233 @@
+#!/bin/sh
+
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 command radioX|wlanX"
+    exit 1
+fi
+
+
+CASCADE_DEVICE_ID="0x0046"
+
+afi_radio_check_casdcade() {
+        local radio=$1
+        local device_id="/sys/class/net/${radio}/device/device"
+
+        if [ -f $device_id ] && [ $(cat $device_id) = "$CASCADE_DEVICE_ID" ]; then
+                return 0
+        fi
+
+        return 1
+}
+
+afi_interface_check_exists() {
+        local iface="$1"
+
+        if [ -d "/sys/class/net/${iface}" ]; then
+                return 0
+        fi
+
+        return 1
+}
+
+afi_interface_is_radio() {
+        local radio="$1"
+
+        # radioX doesn't have parent interface
+        if [ ! -f "/sys/class/net/$radio/parent" ]; then
+                return 0
+        fi
+
+        return 1
+}
+
+afi_mesh_backhaul_health_check() {
+        local wlan="$1"
+
+        local bssid_found=0
+        local supplicant_state=""
+        local supplicant_bssid=""
+        local driver_bssid=""
+
+        # Query wpa_supplicant state and BSSID if exists
+        IFS=$'\n'
+        for dump in $(/usr/sbin/wpa_cli -i "$wlan" status); do
+                case $(echo $dump | cut -d "=" -f 1) in
+                        wpa_state)
+                                supplicant_state=`echo $dump | cut -d "=" -f 2`
+                        ;;
+                        bssid)
+                                supplicant_bssid=`echo $dump | cut -d "=" -f 2`
+                        ;;
+                esac
+        done
+
+        # Compare driver and wpa_supplicant clients reporting
+        if [ "$supplicant_state" == "COMPLETED" ]; then
+                IFS=$'\n'
+                for dump in $(/usr/sbin/iw "$wlan" station dump | grep -i station); do
+                        driver_bssid=`echo $dump | cut -d " " -f 2`
+                        if [ "$supplicant_bssid" == "$driver_bssid" ]; then
+                                bssid_found=1
+                                break
+                        fi
+                done
+
+                # If wpa_supplicant is connected, but driver has no any appropriate client
+                # in STA list it means that wpa_supplicant is stuck and we need to reassociate.
+                if [ "$bssid_found" -eq "0" ]; then
+                        /usr/bin/logger "$0: wpa_supplicant stuck is detected, reassociate"
+                        /usr/sbin/wpa_cli -i "$wlan" reassociate
+                fi
+        fi
+
+        # Return 0 due to the fact that we can self-recover
+        return 0
+}
+
+afi_hawkeye_full_reset() {
+        local vif=$1
+
+        afi_interface_is_radio "$vif" && {
+                echo "Usage: please specify valid wlanX interface name!"
+                return 1
+        }
+
+        local radio=`cat /sys/class/net/$iface/parent`
+        afi_radio_check_casdcade $radio && {
+                echo "Usage: couldn't perform full reset on non-Hawkeye $radio"
+                return 1
+        }
+
+        /usr/bin/logger "$0: Performing full Hawkeye reset on $vif [$radio]"
+
+        # Stop CNSS logger
+        /etc/init.d/cnss_diag stop
+
+        # Prepare Hawkeye radio to artificial crash
+        /usr/sbin/cfg80211tool "$radio" set_fw_recovery 1
+        /bin/touch /tmp/q6coredump_disable
+
+        # Put down all Hawkeye radios to clear AST table
+        cd /sys/class/net
+        for radio_iter in $(ls -d radio* 2>&-); do
+                afi_radio_check_casdcade $radio_iter || {
+                        echo "Hawkeye $radio_iter"
+                        /sbin/ifconfig "$radio_iter" down
+                }
+        done
+
+        # Crash Hawkeye and wait
+        /usr/sbin/cfg80211tool "$radio" set_fw_hang 1
+        /bin/sleep 15
+        /usr/sbin/cfg80211tool "$radio" set_fw_recovery 0
+
+        # Unstuck wpa_supplicant here
+        /usr/sbin/wpa_cli -i "$vif" terminate >/dev/null 2>&1
+
+        # Resume Hawkeye coredump service
+        /bin/rm /tmp/q6coredump_disable
+
+        return 0
+}
+
+afi_hawkeye_fast_reset() {
+        local vif=$1
+
+        afi_interface_is_radio "$vif" && {
+                echo "Usage: please specify valid wlanX interface name!"
+                return 1
+        }
+
+        local radio=`cat /sys/class/net/$iface/parent`
+        afi_radio_check_casdcade $radio && {
+                echo "Usage: couldn't perform fast reset on non-Hawkeye $radio"
+                return 1
+        }
+
+        /usr/bin/logger "$0: Performing fast Hawkeye reset (WAL_RST_MODE_PHY_WARM_RESET) on $vif"
+        /usr/sbin/wifitool "$vif" setUnitTestCmd 0x48 2 1 9 >/dev/null 2>&1
+
+        return 0
+}
+
+afi_wpa_supplicant_terminate() {
+        local vif=$1
+
+        afi_interface_is_radio "$vif" && {
+                echo "Usage: please specify valid wlanX interface name!"
+                return 1
+        }
+
+        /usr/bin/logger "$0: Performing wpa_supplicant restart for $vif"
+        /usr/sbin/wpa_cli -i "$vif" terminate >/dev/null 2>&1
+}
+
+afi_health_check() {
+        local radio=$1
+
+        afi_interface_is_radio "$radio" || {
+                echo "Usage: please specify valid radioX interface name!"
+                return 1
+        }
+
+        local device_role=`ubus call ajconfd.Device GetDeviceConfig | sed -n -e 's/^.*"NodeRole": "\([[:alpha:]_]\+\)".*$/\1/p'`
+
+        # Iterate over all wlanX interfaces of the radioX
+        cd /sys/class/net
+        for wlan in $(ls -d wlan* 2>&-); do
+                [ "$radio" = "$(cat /sys/class/net/${wlan}/parent)" ] || continue
+
+                local iface_props=`ubus call network.wireless status | grep -i "\"$wlan"\" -A 15`
+                local iface_mode=`echo $iface_props | sed -n -e 's/^.*"mode": "\([[:alpha:]_]\+\)".*$/\1/p'`
+                local iface_role=`echo $iface_props | sed -n -e 's/^.*"ubnt_role": "\([[:alpha:]_]\+\)".*$/\1/p'`
+                case "$device_role" in
+                        Extender)
+                                # Perform wpa_supplicant check
+                                case "$iface_role" in
+                                        internal|internal_mp)
+                                                if [ "$iface_mode" == "sta" ]; then
+                                                        afi_mesh_backhaul_health_check "$wlan"
+                                                fi
+                                        ;;
+                                esac
+                        ;;
+                esac
+        done
+
+        return 0
+}
+
+afi_main() {
+        local command=$1
+        local iface=$2
+
+        # Validate radio or virtual interface name
+        afi_interface_check_exists "$iface" || {
+                echo "Usage: $iface is not radio/virtual interface name!"
+                return 1
+        }
+
+        case "$command" in
+                hawkeye_full_reset)
+                        afi_hawkeye_full_reset "$iface"
+                ;;
+                hawkeye_fast_reset)
+                        afi_hawkeye_fast_reset "$iface"
+                ;;
+                wpa_supplicant_terminate)
+                        afi_wpa_supplicant_terminate "$iface"
+                ;;
+                health_check)
+                        afi_health_check "$iface"
+                ;;
+                *)
+                        echo "Usage: please, specify valid command!"
+                        return 1
+                ;;
+        esac
+
+        return $?
+}
+
+afi_main "$@"
+

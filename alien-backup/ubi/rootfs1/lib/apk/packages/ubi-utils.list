@@ -1,0 +1,16 @@
+/etc/init.d/ubihealthd
+/etc/uci-defaults/ubihealthd
+/lib/upgrade/keep.d/ubi-utils
+/usr/sbin/ubiattach
+/usr/sbin/ubiblock
+/usr/sbin/ubicrc32
+/usr/sbin/ubidetach
+/usr/sbin/ubiformat
+/usr/sbin/ubihealthd
+/usr/sbin/ubimkvol
+/usr/sbin/ubinfo
+/usr/sbin/ubinize
+/usr/sbin/ubirename
+/usr/sbin/ubirmvol
+/usr/sbin/ubirsvol
+/usr/sbin/ubiupdatevol

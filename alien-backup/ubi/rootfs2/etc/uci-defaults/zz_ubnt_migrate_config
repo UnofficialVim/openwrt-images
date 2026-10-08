@@ -1,0 +1,413 @@
+#!/bin/sh
+
+. /lib/functions/board.sh
+. /lib/functions/afi.sh
+. /lib/functions/system.sh
+
+dhcp_disable_dhcpv6()
+{
+	for net in lan guest iot; do
+		uci set dhcp.$net.dhcpv6=disabled
+	done
+	uci commit dhcp
+}
+
+enable_plex_rebind()
+{
+	uci -q get dhcp.@dnsmasq[0].rebind_domain | grep plex.direct >/dev/null
+	if [ $? -ne 0 ]; then
+		uci add_list dhcp.@dnsmasq[0].rebind_domain='plex.direct'
+		uci commit dhcp
+	fi
+}
+
+dhcp_delete_anonymous_domain_sections()
+{
+uci -q get dhcp.afi_hostname.domain >/dev/null
+if [ $? -ne 0 ]; then
+	# Delete old entries
+	uci -q delete dhcp.@domain[0]
+	uci -q delete dhcp.@domain[0]
+	uci -q delete dhcp.@domain[0]
+	uci -q delete dhcp.@address[0]
+	uci -q delete dhcp.@address[0]
+	uci -q delete dhcp.@address[0]
+	uci commit dhcp
+fi
+}
+
+add_dns_whitelist()
+{
+	local list="\
+		/amplifi.com/# \
+		/googleapis.com/# \
+		/google.com/# \
+		/gstatic.com/# \
+		/ggpht.com/# \
+		/google.cn/# \
+		/gstatic.cn/# \
+		/riga.corp.ubnt.com/# \
+		/fw-download.ubnt.com/# \
+		/www.ubnt.com/# \
+		/0.ubnt.pool.ntp.org/# \
+		/1.ubnt.pool.ntp.org/# \
+		/2.ubnt.pool.ntp.org/# \
+		/3.ubnt.pool.ntp.org/# \
+		/trace.svc.ui.com/# \
+		"
+	[ "$(uci -q get dhcp.@dnsmasq[0].server)" = "$list" ] && return
+	uci -q delete dhcp.@dnsmasq[0].server
+	for d in $list; do
+		uci add_list dhcp.@dnsmasq[0].server="$d"
+	done
+	uci commit dhcp
+}
+
+# WARNING: this one is kind of permanent, unless we find a better place
+migrate_dhcp()
+{
+	for net in guest iot; do
+		uci -q get dhcp.$net >/dev/null
+		if [ $? -gt 0 ]; then
+			uci batch <<EOF
+set dhcp.$net=dhcp
+set dhcp.$net.interface=$net
+set dhcp.$net.option start=100
+set dhcp.$net.limit=150
+set dhcp.$net.leasetime=1h
+commit dhcp
+EOF
+		fi
+	done
+
+	uci -q get dhcp.guest.leasetime | grep "12h" > /dev/null
+	if [ $? -eq 0 ]; then
+		uci batch <<EOF
+set dhcp.guest.leasetime=1h
+commit dhcp
+EOF
+	fi
+
+
+	for net in lan guest iot; do
+		uci -q get dhcp.$net.dhcpv4 >/dev/null
+		if [ $? -gt 0 ]; then
+			uci batch <<EOF
+set dhcp.$net.dhcpv4=server
+set dhcp.$net.ra=server
+set dhcp.$net.ra_default=0
+set dhcp.$net.ra_force_valid_prefix=1
+set dhcp.$net.ignore=1
+commit dhcp
+EOF
+		fi
+	done
+
+	uci set dhcp.@dnsmasq[0].strictorder=0
+	uci set dhcp.@dnsmasq[0].readethers=0
+	uci set dhcp.odhcpd.maindhcp=1
+	uci set dhcp.odhcpd.loglevel=6
+	uci commit dhcp
+
+	dhcp_disable_dhcpv6
+	enable_plex_rebind
+	dhcp_delete_anonymous_domain_sections
+	add_dns_whitelist
+}
+
+migrate_uhttpd()
+{
+	uci set uhttpd.main.script_timeout='180'
+	uci set uhttpd.main.network_timeout='150'
+	uci set uhttpd.main.home='/www/html'
+	uci set uhttpd.main.max_requests='9'
+	uci commit uhttpd
+}
+
+add_network_wwan()
+{
+	uci -q get network.wwan >/dev/null
+	if [ $? -ne 0 ]; then
+		uci batch <<EOF
+set network.wwan=interface
+set network.wwan.disabled=1
+commit network
+EOF
+	fi
+}
+
+add_network_iot()
+{
+	uci -q get network.iot >/dev/null
+	if [ $? -ne 0 ]; then
+		uci batch <<EOF
+set network.iot=interface
+set network.iot.type=bridge
+set network.iot.proto=static
+set network.iot.ipaddr=192.168.251.1
+set network.iot.netmask=255.255.255.0
+set network.iot.ip6class=local
+commit network
+EOF
+	fi
+}
+
+nodogsplash_redirect_from_dst()
+{
+uci -q get nodogsplash.@instance[0].redirectfromdst >/dev/null
+if [ $? -ne 0 ]; then
+	uci set nodogsplash.@instance[0].redirectfromdst='1.2.3.4'
+	uci commit nodogsplash
+fi
+}
+
+add_firewall_dscp_include()
+{
+	uci -q get firewall.ajconfd >/dev/null
+	if [ $? -ne 0 ]; then
+		uci batch <<EOF
+set firewall.ajconfd=include
+set firewall.ajconfd.path=/usr/share/ajconfd/dscp.sh
+set firewall.ajconfd.reload=1
+commit firewall
+EOF
+	fi
+}
+
+add_firewall_iot_zone()
+{
+	uci show firewall | egrep "zone\[\d+\]\.name='iot'" > /dev/null
+	if [ $? -ne 0 ]; then
+		uci -q batch > /dev/null <<EOF
+add firewall zone
+set firewall.@zone[-1].name=iot
+add_list firewall.@zone[-1].network=iot
+set firewall.@zone[-1].input=REJECT
+set firewall.@zone[-1].output=ACCEPT
+set firewall.@zone[-1].forward=ACCEPT
+
+add firewall forwarding
+set firewall.@forwarding[-1].src=lan
+set firewall.@forwarding[-1].dest=iot
+
+add firewall forwarding
+set firewall.@forwarding[-1].src=iot
+set firewall.@forwarding[-1].dest=wan
+
+add firewall rule
+set firewall.@rule[-1].name='Allow iot DNS'
+set firewall.@rule[-1].src=iot
+set firewall.@rule[-1].dest_port=53
+set firewall.@rule[-1].target=ACCEPT
+
+add firewall rule
+set firewall.@rule[-1].name='Allow iot DHCPv4'
+set firewall.@rule[-1].src=iot
+set firewall.@rule[-1].family=ipv4
+set firewall.@rule[-1].proto=udp
+set firewall.@rule[-1].dest_port='67 68'
+set firewall.@rule[-1].target=ACCEPT
+
+add firewall rule
+set firewall.@rule[-1].name='Allow iot DHCPv6'
+set firewall.@rule[-1].src=iot
+set firewall.@rule[-1].family=ipv6
+set firewall.@rule[-1].proto=udp
+set firewall.@rule[-1].dest_port='546 547'
+set firewall.@rule[-1].target=ACCEPT
+
+add firewall rule
+set firewall.@rule[-1].name='Allow iot ICMPv4'
+set firewall.@rule[-1].src=iot
+set firewall.@rule[-1].family=ipv4
+set firewall.@rule[-1].proto=icmp
+set firewall.@rule[-1].limit='1000/sec'
+set firewall.@rule[-1].target=ACCEPT
+
+add firewall rule
+set firewall.@rule[-1].name='Allow iot ICMPv6'
+set firewall.@rule[-1].src=iot
+set firewall.@rule[-1].family=ipv6
+set firewall.@rule[-1].proto=icmp
+set firewall.@rule[-1].limit='1000/sec'
+set firewall.@rule[-1].target=ACCEPT
+
+add firewall rule
+set firewall.@rule[-1].name='Allow guest ICMPv4'
+set firewall.@rule[-1].src=guest
+set firewall.@rule[-1].family=ipv4
+set firewall.@rule[-1].proto=icmp
+set firewall.@rule[-1].limit='1000/sec'
+set firewall.@rule[-1].target=ACCEPT
+
+commit firewall
+EOF
+	fi
+}
+
+firewall_wan_input_drop()
+{
+	uci set firewall.@zone[2].input='DROP'
+	uci commit firewall
+}
+
+add_analytics_sending()
+{
+	uci -q get ajconfd.@site_config[0].send_analytics_enabled >/dev/null
+	if [ $? -ne 0 ]; then
+		uci batch <<EOF
+set ajconfd.@site_config[0].send_analytics_enabled=1
+commit ajconfd
+EOF
+	fi
+}
+
+disable_stp()
+{
+	for net in lan guest iot; do
+		uci -q delete network.$net.stp && uci commit network
+	done
+}
+
+disable_hw_acceleration()
+{
+	uci -q delete ajconfd.@site_config[0].hw_nat_enabled && uci commit
+}
+
+migrate_wifi_encryption()
+{
+	for i in $(uci show wireless | grep -E "wireless.@wifi-iface\[\d+\].ubnt_role='(user|device_specific|guest|friend|iot)'" | cut -d '[' -f2 | cut -d ']' -f1); do
+		encryption="$(uci -q get wireless.@wifi-iface[${i}].encryption)"
+		[ "${encryption}" = 'sae-mixed' -o "${encryption}" = 'sae' ] \
+			&& uci set wireless.@wifi-iface[${i}].encryption="psk2" \
+			&& uci -q delete wireless.@wifi-iface[${i}].ieee80211w
+	done
+	uci changes wireless | grep -q "encryption='psk2'" \
+		&& uci commit wireless \
+		&& echo "Wifi encryption changed to psk2." > /dev/kmsg
+}
+
+set_ipv6_defaults()
+{
+	for net in guest iot; do
+		uci -q get network.$net.ip6class >/dev/null
+		if [ $? -gt 0 ]; then
+			uci batch <<EOF
+set network.$net.ip6class=local
+commit
+EOF
+		fi
+	done
+}
+
+add_lan6()
+{
+	uci -q get network.lan6 >/dev/null
+	if [ $? -gt 0 ]; then
+		uci batch <<EOF
+set network.lan6=interface
+set network.lan6.ifname='@lan'
+set network.lan6.proto='dhcpv6'
+set network.lan6.disabled=1
+commit
+EOF
+	fi
+}
+
+delete_wifi_crash_dump()
+{
+	[ "$(stats_tool -m wifi-crash-dump 2>/dev/null)" ] && stats_tool -e wifi-crash-dump
+}
+
+set_default_ip6assign()
+{
+	local default_ip6assign='64'
+	local need_commit=0
+
+	while [ -n "$1" ]; do
+
+		local net=$1; shift
+		local entry_type=$(uci get network.$net 2> /dev/null)
+		local cur_ip6assign=""
+
+		if [ "$entry_type" != "interface" ]; then
+			# this interface entry is not present
+			echo "Entry network.$net not found. Skip $net."
+			continue
+		fi
+
+		cur_ip6assign=$(uci get network.$net.ip6assign 2> /dev/null)
+
+		if [ "$cur_ip6assign" != "$default_ip6assign" ]; then
+			uci set network.$net.ip6assign="$default_ip6assign"
+			need_commit=1
+		fi
+	done
+
+	if [ $need_commit -ne 0 ]; then
+		uci commit network
+	fi
+}
+
+allow_dhcpv6_response_from_any()
+{
+	local rule_num=`uci -q show firewall | egrep "rule\[\d+\]\.name='Allow-DHCPv6'" | egrep -o '\d+' | head -1`
+	[ -z "$rule_num" ] && return
+
+	local src_ip=`uci -q get firewall.@rule[${rule_num}].src_ip`
+	[ "$src_ip" != "fc00::/6" ] && return
+
+	uci -q delete firewall.@rule[${rule_num}].src_ip
+	uci commit firewall
+}
+
+board=$(board_name)
+shortname=$(afi_board_shortname)
+
+echo "Configuration migration: $fw_prev -> $fw_this" > /dev/kmsg
+# 'fw_this' is always current version (format 1.2.3)
+# 'fw_prev' is any of the following:
+#  - 1.2.3   : normal version number
+#  - none    : factory defaults
+#  - unknown : not default cfg, prev version N/A (always the case for 16MB HW)
+
+# common migrations
+add_network_wwan
+add_network_iot
+disable_stp
+disable_hw_acceleration
+migrate_wifi_encryption
+migrate_uhttpd
+nodogsplash_redirect_from_dst
+add_analytics_sending
+delete_wifi_crash_dump
+add_firewall_iot_zone
+set_default_ip6assign lan guest iot
+allow_dhcpv6_response_from_any
+
+case "$board" in
+ubiquiti,afi-aln-r)
+	case "$shortname" in
+	*)
+		migrate_dhcp
+
+		add_firewall_dscp_include
+		firewall_wan_input_drop
+		set_ipv6_defaults
+		add_lan6
+		set_default_ip6assign lan6
+		;;
+	esac
+	;;
+
+ubiquiti,afi-aln-p)
+	/usr/bin/prst_tool -r pairing 2>/dev/null | grep -q '}'
+	if [ $? -gt 0 ]; then
+		migrate_dhcp
+	else
+		dhcp_disable_dhcpv6
+	fi
+	;;
+esac
+
+exit 0

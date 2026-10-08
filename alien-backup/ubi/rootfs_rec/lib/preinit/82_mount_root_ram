@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Override 80_mount_root
+do_mount_root() {
+	mount_root
+	boot_run_hook preinit_mount_root
+	[ -e /usr/bin/recovery.sh ] && mount_root ram
+}

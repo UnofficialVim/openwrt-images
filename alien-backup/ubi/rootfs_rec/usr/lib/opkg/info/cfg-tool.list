@@ -1,0 +1,5 @@
+/usr/sbin/cfg.sh
+/lib/functions/afi-cfg-spipart.sh
+/lib/preinit/81_extract_cfg
+/lib/functions/afi-cfg-ubivol.sh
+/usr/sbin/cfg_tool

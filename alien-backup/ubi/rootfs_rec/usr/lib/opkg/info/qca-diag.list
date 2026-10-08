@@ -1,0 +1,3 @@
+/usr/lib/libdiag.so
+/usr/sbin/diag_stress_app
+/usr/sbin/diag_socket_app

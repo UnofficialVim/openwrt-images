@@ -1,0 +1,4 @@
+/usr/bin/recovery.sh
+/etc/init.d/recovery
+/etc/uci-defaults/zzz_recovery_config
+/lib/preinit/82_mount_root_ram

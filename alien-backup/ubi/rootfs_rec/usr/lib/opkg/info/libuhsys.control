@@ -1,0 +1,10 @@
+Package: libuhsys
+Version: 039f99b19f62164180497f2da21888f559074b63-1
+Depends: libc, kmod-ubnt-hal, libuci20130104
+Source: package/ubiquiti/libuhsys
+SourceName: libuhsys
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 2509
+Description:  UH board identification library

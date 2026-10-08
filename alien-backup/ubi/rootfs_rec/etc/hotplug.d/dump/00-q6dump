@@ -1,0 +1,12 @@
+#!/bin/sh
+
+[ -e /tmp/q6coredump_disable ] && exit 0
+
+if [ -e /dev/$DEVICENAME ] && [ "$ACTION" = add ]; then
+    echo "Starting $DEVICENAME dump collection" > /dev/kmsg
+
+    gzip -c /dev/$DEVICENAME | stats_tool -w wifi-crash-dump -a 51200 &&
+        echo "Collecting $DEVICENAME dump succeeded" > /dev/kmsg ||
+        echo "Collecting $DEVICENAME dump failed" > /dev/kmsg
+    reboot
+fi

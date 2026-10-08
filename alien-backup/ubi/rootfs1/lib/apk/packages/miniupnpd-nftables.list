@@ -1,0 +1,8 @@
+/etc/config/upnpd
+/etc/hotplug.d/iface/50-miniupnpd
+/etc/init.d/miniupnpd
+/usr/sbin/miniupnpd
+/usr/share/nftables.d/chain-post/dstnat/20-miniupnpd.nft
+/usr/share/nftables.d/chain-post/forward/20-miniupnpd.nft
+/usr/share/nftables.d/chain-post/srcnat/20-miniupnpd.nft
+/usr/share/nftables.d/table-post/20-miniupnpd.nft

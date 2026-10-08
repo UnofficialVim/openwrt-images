@@ -1,0 +1,3 @@
+/etc/modules-boot.d/31-qca-nss-dp
+/etc/modules.d/31-qca-nss-dp
+/lib/modules/6.12.63/qca-nss-dp.ko

@@ -1,0 +1,63 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=50
+USE_PROCD=1
+STATE_FILE=/var/run/qos-active
+
+fw3_lock() {
+  flock -n 1001 &> /dev/null
+  if [ "$?" != "0" ]; then
+    exec 1001>/var/run/fw3.lock
+    flock 1001
+    if [ "$?" != "0" ]; then
+      logger warning: qos fw3 flock failed
+      echo warning: qos fw3 flock failed
+    fi
+  fi
+}
+
+validate_qos_section()
+{
+	uci_validate_section qos interface "${1}" \
+		'enabled:bool' \
+		'upload:uinteger' \
+		'download:uinteger'
+}
+
+restart() {
+	[ -e "$STATE_FILE" ] || return
+
+	fw3_lock
+	qos-start
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger "qos"
+	procd_add_validation validate_qos_section
+
+	[ -e "$STATE_FILE" ] || return
+
+	fw3_lock
+	qos-start
+}
+
+start_service() {
+	echo 1 > $STATE_FILE
+	fw3_lock
+	qos-start
+}
+
+reload_service() {
+	[ -e "$STATE_FILE" ] || return
+
+	fw3_lock
+	qos-start
+}
+
+stop_service() {
+	fw3_lock
+	qos-stop
+	rm $STATE_FILE
+}

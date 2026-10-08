@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2020 Ubiquiti Inc.
+
+START=60
+
+USE_PROCD=1
+NAME=dbus
+PROG=/usr/sbin/dbus-daemon
+
+start_service() {
+        mkdir -m 0755 -p /var/lib/dbus
+        mkdir -m 0755 -p /var/run/dbus
+        [ -x /usr/bin/dbus-uuidgen ] && /usr/bin/dbus-uuidgen --ensure
+
+        procd_open_instance
+        procd_set_param command "$PROG" --system --nofork --nopidfile
+        # Allow unlimited restarts with 5 seconds interval
+        procd_set_param respawn 3600 5 0
+        procd_close_instance
+}

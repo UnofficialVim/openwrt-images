@@ -1,0 +1,2 @@
+/etc/modules.d/hci-uart
+/lib/modules/6.12.63/hci_uart.ko

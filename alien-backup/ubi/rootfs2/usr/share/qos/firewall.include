@@ -1,0 +1,8 @@
+#!/bin/sh
+# qos-scripts integration for firewall3
+
+STATE_FILE=/var/run/qos-active
+
+if [ -e "$STATE_FILE" ]; then
+  /usr/lib/qos/generate.sh firewall start | sh
+fi

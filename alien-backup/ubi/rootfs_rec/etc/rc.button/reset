@@ -1,0 +1,44 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+if [ -e /tmp/test_mode ]; then
+
+    if [ "${ACTION}" = "pressed" ]; then
+        touch /tmp/reset_pressed
+    fi
+
+    if [ "${ACTION}" = "released" ]; then
+        touch /tmp/reset_released
+    fi
+
+    return 0
+fi
+
+. /lib/functions/board.sh
+board=$(board_name)
+case "$board" in
+afi-pb)
+        /etc/rc.button/reset-$board "$@"
+        return $?
+        ;;
+*)
+        ;;
+esac
+
+case "$ACTION" in
+pressed)
+        return 2
+;;
+timeout)
+        echo "FACTORY RESET" > /dev/console
+        ubus call uictld reboot
+        cfg.sh erase
+        sync
+        echo off > /proc/afi_leds/mode
+        sleep 1
+        reboot -fn &
+;;
+esac
+
+return 0

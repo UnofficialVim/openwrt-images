@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. /lib/functions/afi.sh
+
+shortname=$(afi_board_shortname)
+shortmac=$(afi_board_eth0_macaddr | cut -c9- | tr a-z A-Z | tr -d :)
+uci set system.@system[0].hostname="$shortname-$shortmac"
+uci commit system
+
+exit 0

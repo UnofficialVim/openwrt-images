@@ -1,0 +1,6 @@
+#!/bin/sh
+
+[ "${ACTION}" = "add" ] && [ "${INTERFACE%%[0-9]}" = "radio" ] && {
+	/sbin/wifi config
+	/bin/touch /tmp/wifi_config_done
+}

@@ -1,0 +1,168 @@
+body {
+	line-height: 1.25;
+	position: relative;
+}
+table {
+	border: 1px solid #ccc;
+	border-collapse: collapse;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+table caption {
+	font-size: 1em;
+	margin: .5em 0 .75em;
+}
+table tr {
+	background: #f8f8f8;
+	border: 1px solid #ddd;
+	padding: .35em;
+}
+table th,
+table td {
+	padding: .625em;
+	font-size: .75em;
+	text-align: center;
+}
+table th {
+	font-size: .75em;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+}
+.node circle {
+	fill: #fff;
+	stroke: #009FE2;
+	stroke-width: 4px;
+}
+.node text {
+	font: 13px sans-serif;
+	margin: 10px;
+	fill: #135;
+}
+.link {
+	fill: none;
+	stroke: #009fe369;
+	stroke-width: 3px;
+}
+
+#divgraph {
+	margin-top: 0px;
+	margin-bottom: 20px;
+	background-color: #ffffffcc;
+	border: #ddd 1px solid;
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+#map {
+	height: 500px;
+}
+
+.divicon {
+	color: #444;
+	font: 13px sans-serif;
+	padding: 5px;
+	margin: 6px;
+	text-align: center;
+	height: 170px;
+	width: 170px;
+	background-color:#fff;
+	border:1px solid #aaa;
+	border-radius: 5px;
+	float: left;
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+	cursor: pointer;
+}
+
+.imgicon {
+	margin: 10px;
+	max-width: 101px;
+	max-height: 101px;
+}
+
+#overlay {
+	position: fixed;
+	background-color: rgba(96,96,96,0.7);
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: none;
+	height: 100%;
+	width: 100%;
+	z-index: 1001;
+	cursor: pointer;
+}
+
+.backhaul {stroke-width: 4px;}
+
+.link {transform: translateZ(0);}
+
+.tdownveryfast {stroke-dasharray: 5 2; animation: tdownveryfast 50s linear infinite;}
+.tupveryfast {stroke-dasharray: 5 2; animation: tupveryfast 50s linear infinite;}
+.tdownfast {stroke-dasharray: 5 2; animation: tdownfast 50s linear infinite;}
+.tupfast {stroke-dasharray: 5 2; animation: tupfast 50s linear infinite;}
+.tdownmedium {stroke-dasharray: 5 2; animation: tdownmedium 50s linear infinite;}
+.tupmedium {stroke-dasharray: 5 2; animation: tupmedium 50s linear infinite;}
+.tdownslow {stroke-dasharray: 5 2; animation: tdownslow 50s linear infinite;}
+.tupslow {stroke-dasharray: 5 2; animation: tupslow 50s linear infinite;}
+
+@keyframes tdownveryfast {to {stroke-dashoffset: -3300;}}
+@keyframes tupveryfast {to {stroke-dashoffset: 3300;}}
+@keyframes tdownfast {to {stroke-dashoffset: -1100;}}
+@keyframes tupfast {to {stroke-dashoffset: 1100;}}
+@keyframes tdownmedium {to {stroke-dashoffset: -700;}}
+@keyframes tupmedium {to {stroke-dashoffset: 700;}}
+@keyframes tdownslow {to {stroke-dashoffset: -350;}}
+@keyframes tupslow {to {stroke-dashoffset: 350;}}
+
+.linketh.tdownveryfast,
+.linketh.tupveryfast,
+.linketh.tdownfast,
+.linketh.tupfast,
+.linketh.tdownmedium,
+.linketh.tupmedium,
+.linketh.tdownslow,
+.linketh.tupslow {stroke-dasharray: 10 2}
+
+#clientlist tr td {
+	max-width: 20vw;
+	overflow:hidden;
+}
+
+#clientlist tr td:nth-child(1) {
+	max-width: 150px;
+	overflow:hidden;
+}
+
+#cdetails td {
+	max-width: 100px;
+	overflow:hidden;
+}
+
+#cdetails img {
+	max-height: 101px;
+	max-width: 101px;
+}
+
+@media (max-width: 640px) {
+	#clientlist th {
+		font-size: .75em;
+	}
+	#clientlist tr td:nth-child(1) {
+		max-width: 120px;
+	}
+	#clientlist tr td:first-child img {
+		max-width: 50px;
+	}
+	#clientlist tr td:nth-child(3), #clientlist tr th:nth-child(3) {
+		display:none;
+	}
+	#iconlist div.divicon {
+		width: 150px;
+	}
+	#iconlist img.imgicon {
+		max-height: 101px;
+		max-width: 101px;
+	}
+}

@@ -1,0 +1,975 @@
+. /usr/share/libubox/jshn.sh
+. /lib/functions/afi.sh
+
+getvar() {
+	local var
+	var=$(echo "$1" | awk -F'&' '{for(i=1;i<=NF;i++){print $i}}' |\
+		#grep "^$2=" | awk -F'=' '{print $2;}')
+		grep "$2=" | awk -F'=' '{print $2;}')
+	uhttpd -d "$var" 2>/dev/null
+}
+
+get_ptype() {
+	local product
+	local ptype
+	local product="$(afi_board_name)"
+	case "$product" in
+	*"Router"*|*"AmpliFi X"*)
+		ptype="Router"
+		;;
+	*"Mesh Point"*)
+		ptype="MeshPoint"
+		;;
+	*"Teleport"*)
+		ptype="Teleport"
+		;;
+	*"AmpliFi Power Box"*)
+		ptype="PowerBox"
+		;;
+	*)
+		ptype="Unknown"
+		;;
+	esac
+	echo "$ptype"
+}
+
+get_pshortname() {
+	echo "$(afi_board_shortname)"
+}
+
+get_role() {
+	local role="unknown"
+	local serialno="$(afi_ubnthal system.info serialno)"
+	local shortname="$(afi_board_shortname)"
+	json=$(ubus call uci get "{\"config\":\"ajconfd\",\"type\":\"registered_cluster_node\",\"match\":{\"platform_name\":\"$shortname\"}}")
+	json_load "$json"
+	json_select values
+	json_get_keys keys
+	for mac in $keys; do
+		if [ "$mac" = "$serialno" ]; then
+			json_select $mac
+			json_get_var role role
+			break
+		fi
+	done
+	echo "$role"
+}
+
+get_modal_header() {
+	local ptype="$1"
+	if [ "$(is_teleport)" ]; then
+		echo "<div class='base-modal-header teleport'>"
+	elif [ "$ptype" = "MeshPoint" ]; then
+		if [ "$SHORTNAME" = "AFi-P-G" ]; then
+			echo "<div class='base-modal-header meshpoint-g'>"
+		else
+			PlatformModification="$(ubus call ajconfd.Device GetProperty '{"name": "PlatformModification"}' | grep '"value":' | awk '{print $2}')"
+			if [ "$PlatformModification" = "3" ]; then
+				echo "<div class='base-modal-header meshpoint-u'>"
+			else
+				echo "<div class='base-modal-header meshpoint'>"
+			fi
+		fi
+	elif [ "$ptype" = "PowerBox" ]; then
+		echo "<div class='base-modal-header powerbox'>"
+	else
+		if [ "$SHORTNAME" = "AFi-INS-R" ]; then
+			echo "<div class='base-modal-header ins-r'>"
+		elif [ "$SHORTNAME" = "AFi-INS-P" ]; then
+			echo "<div class='base-modal-header ins-p'>"
+		elif [ "$SHORTNAME" = "AFi-INS-R-G" ]; then
+			echo "<div class='base-modal-header ins-r-g'>"
+		elif [ "$SHORTNAME" = "AFi-R-G" ]; then
+			echo "<div class='base-modal-header router-g'>"
+		elif [ "$SHORTNAME" = "AFi-ALN-R" ]; then
+			echo "<div class='base-modal-header router-aln'>"
+		elif [ "$SHORTNAME" = "AFi-ALN-P" ]; then
+			echo "<div class='base-modal-header mp-aln'>"
+		else
+			echo "<div class='base-modal-header router'>"
+		fi
+	fi
+}
+
+platform_info() {
+	local return="$1"
+	local platform="$2"
+	if [ "$platform" = "AFi-R" -o "$platform" = "AFi-R-HD" ]; then
+		item_image="router"
+		item_name="AmpliFi Router"
+	elif [ "$platform" = "AFi-P-HD" ]; then
+		item_image="meshpoint"
+		item_name="AmpliFi HD Mesh Point"
+	elif [ "$platform" = "AFi-P-HD3" ]; then
+		item_image="meshpoint-u"
+		item_name="AmpliFi HD Mesh Point"
+	elif [ "$platform" = "AFi-P" ]; then
+		item_image="meshpoint"
+		item_name="AmpliFi Mesh Point"
+	elif [ "$platform" = "AFi-INS-R" ]; then
+		item_image="ins-r"
+		item_name="AmpliFi Instant Router"
+	elif [ "$platform" = "AFi-INS-P" ]; then
+		item_image="ins-p"
+		item_name="Instant Mesh Point"
+	elif [ "$platform" = "AFi-INS-R-G" ]; then
+		item_image="ins-r-g"
+		item_name="Instant Gamer's Edition"
+	elif [ "$platform" = "AFi-R-G" ]; then
+		item_image="router-g"
+		item_name="AmpliFi Gamer's Edition"
+	elif [ "$platform" = "AFi-P-G" ]; then
+		item_image="meshpoint-g"
+		item_name="Gamer's Mesh Point"
+	elif [ "$platform" = "AFi-ALN-R" ]; then
+		item_image="router-aln"
+		item_name="AmpliFi Alien Router"
+	elif [ "$platform" = "AFi-ALN-P" ]; then
+		item_image="mp-aln"
+		item_name="Alien Mesh Point"
+	elif [ "$platform" = "AFi-T" ]; then
+		item_image="teleport"
+		item_name="AmpliFi Teleport"
+	else
+		item_image="other"
+		item_name="AmpliFi device"
+	fi
+
+	if [ "$return" = "shorter_name" ]; then
+		echo "$item_name"
+	elif [ "$return" = "image" ]; then
+		echo "$item_image"
+	fi
+}
+
+get_setup_title() {
+	if [ "$(is_teleport)" ]; then
+		echo "Connecting Teleport to Internet"
+	else
+		echo "$PNAME™ Wi-Fi Setup Wizard"
+	fi
+}
+
+get_wan_cable_img() {
+	local shortname="$1"
+
+	if [ "$shortname" = "AFi-INS-R" -o "$shortname" = "AFi-INS-R-G" ]; then
+		echo "<img class='max-width-100pct' src='img/fixthis-ins-r.png' alt=''>"
+	elif [ "$shortname" = "AFi-ALN-R" ]; then
+		echo "<img class='max-width-100pct' src='img/fixthis-aln-r.png' alt=''>"
+	else
+		echo "<img class='max-width-100pct' src='img/fixthis-router.png' alt=''>"
+	fi
+}
+
+get_dev_mode() {
+	if [ "$(prst_tool -r misc 2> /dev/null | grep -iq SSH; echo $?)" != "1" ]; then
+		echo "1"
+	fi
+}
+
+validate_mac_addr() {
+	[ "$(echo -n "$1" | tr -d '\n' | grep -Eq '^([0-9A-Fa-f]{2}[:\_-]){5}([0-9A-Fa-f]{2})$' && echo 1)" ] && echo -n "valid"
+}
+
+validate_strlen() {
+	local len
+	local str="$1"
+	local lenmin="$2"
+	local lenmax="$3"
+
+	len=$(echo -n "$str" | wc -c)
+	if [ "$len" -lt "$lenmin" -o "$len" -gt "$lenmax" ]; then
+		# error
+		echo "1"
+	else
+		# valid
+		echo "0"
+	fi
+}
+
+validate_initial() {
+	local qs="$1"
+	local ssid=$(getvar "$qs" "ssid")
+	local wifipassword=$(getvar "$qs" "wifipassword")
+	local samepass=$(getvar "$qs" "samepass")
+	local admpassword
+	if [ "$samepass" = "0" ]; then
+		admpassword=$(getvar "$qs" "admpassword")
+	fi
+
+	if [ "$(validate_strlen "$ssid" 1 32)" -gt 0 ]; then
+		echo "ssid"
+	elif [ "$(validate_strlen "$wifipassword" 8 32)" -gt 0 ]; then
+		echo "wifipassword"
+	elif [  "$samepass" = "0" -a "$(validate_strlen "$admpassword" 1 32)" -gt 0 ]; then
+		echo "admpassword"
+	else
+		echo "0"
+	fi
+}
+
+validate_initial_mp() {
+	local qs="$1"
+	local ssid=$(getvar "$qs" "ssid")
+	local wifipassword=$(getvar "$qs" "wifipassword")
+
+	if [ "$(validate_strlen "$ssid" 1 32)" -gt 0 ]; then
+		echo "ssid"
+	elif [ "$(validate_strlen "$wifipassword" 8 32)" -gt 0 ]; then
+		echo "wifipassword"
+	else
+		echo "0"
+	fi
+}
+
+inetcheck_and_redirect() {
+	local ic_status
+	local ic_reason
+	json_load "$(ubus call inetcheck check)"
+	json_get_var ic_status "inet_status_str"
+	json_get_var ic_reason "inet_reason_str"
+
+	if [ "$ic_status" = "INET_STATUS_GREEN" ]; then
+		echo "<meta http-equiv=\"refresh\" content=\"0;URL='connect.php'\" />"
+	else
+		if [ "$ic_reason" = "INET_REASON_NO_LINK" ]; then
+			echo "<meta http-equiv=\"refresh\" content=\"0;URL='failed.php?reason=nolink'\" />"
+		elif [ "$ic_reason" = "INET_REASON_NO_ADDR" ]; then
+			echo "<meta http-equiv=\"refresh\" content=\"0;URL='failed.php?reason=noip'\" />"
+		else
+			echo "<meta http-equiv=\"refresh\" content=\"0;URL='failed.php?reason=nointernet'\" />"
+		fi
+	fi
+}
+
+validate_wifi_country() { # validates given country against available wifi countries
+	local test_country="$1"
+	local country
+	local type
+	local i=1
+
+	[ ! "$test_country" ] && test_country="US"
+
+	local json="$(ubus call ajconfd.Device GetWifiCountries 2>/dev/null)"
+	json_load "$json" > /dev/null
+	json_select "value" >/dev/null
+	while json_get_type type $i && [ "$type" = "string" ]; do
+		json_get_var country "$((i++))"
+		[ "$country" = "$test_country" ] && break # test_country is valid choice
+	done
+
+	[ "$country" ] && echo -n "$country" || echo -n "$test_country"
+}
+
+get_setup_done() {
+	[ "$(uci get ajconfd.@device_config[0].initial_setup_done 2>/dev/null)" = "1" ] && echo -n 1 || echo -n 0
+}
+
+initial_setup_r() {
+	local ssid="$1"
+	local wifipassword="$2"
+	local admpassword="$3"
+	local timezone="$4"
+	local country="$(validate_wifi_country "US")"
+	local timestamp="$(date +%s)000000"
+
+	afitool --silent_caps -c  \
+		"{\"cmd\":\"initial_setup\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"$timestamp\"},\
+			{\
+				\"WifiConfig\":{\
+					\"Ssid\":\"$ssid\",\
+					\"Password\":\"$wifipassword\"\
+				},\
+				\"UsersConfig\":{\
+					\"admin\":{\
+						\"Role\":\"Admin\",\
+						\"Password\":\"$admpassword\"\
+					}\
+				},\
+				\"DeviceConfig\":{\
+					\"FriendlyName\":\"$ssid\"\
+				},\
+				\"SiteConfig\":{\
+					\"Country\":\"$country\",\
+					\"ZoneName\":\"$timezone\"\
+				}\
+			}\
+		]}" &> $AFITOOLLOG
+}
+
+
+
+initial_setup_mp() {
+
+	log_debug "initial_setup_mp \"$1\" \"***\" \"***\" \"$4\" \"$5\" \"$6\""
+
+	local ssid="$1"
+	local wifipassword="$2"
+	local admpassword="$3"
+	local timezone="$4"
+	local freq="$5"
+	local open="$6"
+	local country="$(validate_wifi_country "US")"
+	local timestamp="$(date +%s)000000"
+	local ab="5 GHz"
+	if [ "$freq" -lt 5000 ]; then
+		ab="2.4 GHz"
+	fi
+	local encr="Psk2"
+	[ "$open" = "1" ] && encr="None"
+
+	afitool -c  \
+		"{\"cmd\":\"initial_setup\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"$timestamp\"},\
+			{\
+				\"WifiConfig\":{\
+					\"UserNetworkEnabled\":\"True\",\
+					\"Ssid\":\"$ssid\",\
+					\"Encryption\":\"$encr\",\
+					\"Password\":\"$wifipassword\",\
+					\"ActiveBand\":\"$ab\",\
+					\"WwanSsid\":\"$ssid\",\
+					\"WwanPassword\":\"$wifipassword\",\
+					\"WwanEncryption\":\"$encr\",\
+					\"RelayModeEnabled\":\"True\",\
+					\"WwanNetworkEnabled\":\"True\",\
+					\"Channel_2_4GHz\":\"-1\",\
+					\"Channel_5GHz\":\"-1\",\
+					\"Country\":\"$country\"\
+				},\
+				\"UsersConfig\":{\
+					\"admin\":{\
+						\"Role\":\"Admin\",\
+						\"Password\":\"$admpassword\"\
+					}\
+				},\
+				\"SiteConfig\":{\
+					\"Country\":\"$country\",\
+					\"ZoneName\":\"$timezone\"\
+				}\
+			}\
+		]}" &> $AFITOOLLOG
+}
+
+initial_setup_teleport_wired() {
+	local adopt_type="$1"
+	local adopt_value="$2"
+	afitool -c  \
+		"{\"cmd\":\"initial_setup\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"1\"},\
+			{\
+				\"WifiConfig\":{\
+					\"UserNetworkEnabled\":\"False\"\
+				},\
+				\"SiteConfig\":{\
+					\"$adopt_type\":\"$adopt_value\"\
+				},\
+				\"DeviceConfig\":{\
+					\"MlConnectivityMode\":\"Wired\"\
+				}\
+			}\
+		]}" &> $AFITOOLLOG
+}
+
+initial_setup_teleport_wireless() {
+
+	log_debug "initial_setup_teleport_wireless $1 $2 $3 *** $5"
+
+	local adopt_type="$1"
+	local adopt_value="$2"
+	local ssid="$3"
+	local wifipassword="$4"
+	local freq="$5"
+	local ab="5 GHz"
+	local timestamp="$(uci get wireless.wireless.timestamp 2>/dev/null)"
+	[ ! "$timestamp" ] && timestamp=2
+	if [ "$freq" -lt 5000 ]; then
+		ab="2.4 GHz"
+	fi
+
+	log_debug "afitool $timestamp $ab $ssid *** $freq $adopt_type $adopt_value"
+
+	afitool -c  \
+		"{\"cmd\":\"initial_setup\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"$timestamp\"},\
+			{\
+				\"WifiConfig\":{\
+					\"ActiveBand\":\"$ab\",\
+					\"WwanSsid\":\"$ssid\",\
+					\"WwanPassword\":\"$wifipassword\",\
+					\"WwanEncryption\":\"Psk2\",\
+					\"RelayModeEnabled\":\"False\",\
+					\"Channel_2_4GHz\":\"-1\",\
+					\"Channel_5GHz\":\"-1\"\
+				},\
+				\"SiteConfig\":{\
+					\"$adopt_type\":\"$adopt_value\"\
+				},\
+				\"DeviceConfig\":{\
+					\"MlConnectivityMode\":\"Wireless\"\
+				}\
+			}\
+		]}" &> $AFITOOLLOG
+}
+
+config_teleport_wired() {
+
+	log_debug "config_teleport_wired \"$1\" \"***\""
+
+	local local_ssid="$1"
+	local local_wifipassword="$2"
+
+	if [ "$local_ssid" -a "$local_wifipassword" ]; then
+		local timestamp="$(uci get wireless.wireless.timestamp 2>/dev/null)"
+		[ ! "$timestamp" ] && timestamp=2
+
+		ubus call ajconfd.ClusterNode SetInitialConfig '{"config": [{"LastUpdateTimestamp": "'"$timestamp"'"}, {"DeviceConfig": {"MlConnectivityMode": "Wired", "MlSkipSetupConfirmation": true, "MlIsolationMode": "Full"}, "WifiConfig": {"Ssid":"'"$local_ssid"'", "Password":"'"$local_wifipassword"'", "InternalSsid":"'"$local_ssid"'", "InternalPassword":"'"$local_wifipassword"'", "InternalEncryption":"Psk2", "UserNetworkEnabled": true, "InitialSetupNetworkEnabled": false}}]}' &> $AFITOOLLOG
+
+	else
+		ubus call ajconfd.Device SetDeviceConfig '{"config": {"MlConnectivityMode":"Wired"}}' &> $AFITOOLLOG
+
+	fi
+}
+
+config_teleport_wireless() {
+
+	log_debug "config_teleport_wireless \"$1\" \"***\" \"$3\" \"$4\" \"$5\" \"***\""
+
+	local ssid="$1"
+	local wifipassword="$2"
+	local freq="$3"
+	local open="$4"
+	local local_ssid="$5"
+	local local_wifipassword="$6"
+	local ab="5 GHz"
+	local encr="Psk2"
+	local timestamp="$(uci get wireless.wireless.timestamp 2>/dev/null)"
+	[ ! "$timestamp" ] && timestamp=2
+	if [ "$freq" -lt 5000 ]; then
+		ab="2.4 GHz"
+	fi
+	[ "$open" = "1" ] && encr="None"
+
+	log_debug "afitool \"$timestamp\" \"$ab\" \"$ssid\" \"***\" \"$encr\" \"$local_ssid\" \"***\""
+
+	if [ "$local_ssid" -a "$local_wifipassword" ]; then
+		ubus call ajconfd.ClusterNode SetInitialConfig '{"config": [{"LastUpdateTimestamp": "'"$timestamp"'"}, {"DeviceConfig": {"MlConnectivityMode": "Wireless", "MlSkipSetupConfirmation": true, "MlIsolationMode": "Full"}, "WifiConfig": {"Ssid":"'"$local_ssid"'", "Password":"'"$local_wifipassword"'", "InternalSsid":"'"$local_ssid"'", "InternalPassword":"'"$local_wifipassword"'", "ActiveBand": "'"$ab"'", "WwanSsid": "'"$ssid"'", "WwanPassword": "'"$wifipassword"'", "WwanEncryption": "'"$encr"'", "RelayModeEnabled": false, "InternalEncryption":"Psk2", "UserNetworkEnabled": true, "InitialSetupNetworkEnabled": false}}]}'
+
+	else
+		afitool --defer -c  \
+		"{\"cmd\":\"set_device_config\",\"payload\":\
+			{\
+				\"MlConnectivityMode\":\"Wireless\"\
+			}\
+		}" &> $AFITOOLLOG
+
+		afitool --commit -c  \
+		"{\"cmd\":\"set_wifi_config\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"$timestamp\"},\
+			{\
+				\"ActiveBand\":\"$ab\",\
+				\"WwanSsid\":\"$ssid\",\
+				\"WwanPassword\":\"$wifipassword\",\
+				\"WwanEncryption\":\"$encr\",\
+				\"RelayModeEnabled\":\"False\",\
+				\"Channel_2_4GHz\":\"-1\",\
+				\"Channel_5GHz\":\"-1\"\
+			}\
+		]}" &> $AFITOOLLOG
+	fi
+
+}
+
+config_teleport_ap() {
+
+	log_debug "config_teleport_ap \"$1\" \"***\""
+
+	local local_ssid="$1"
+	local local_wifipassword="$2"
+	local timestamp="$(uci get wireless.wireless.timestamp 2>/dev/null)"
+	[ ! "$timestamp" ] && timestamp=2
+
+	afitool -c  \
+	"{\"cmd\":\"set_wifi_config\",\"payload\":[\
+		{\"LastUpdateTimestamp\":\"$timestamp\"},\
+		{\
+			\"Ssid\":\"$local_ssid\",\
+			\"Password\":\"$local_wifipassword\",\
+			\"InternalEncryption\":\"Psk2\",\
+			\"UserNetworkEnabled\":\"True\",\
+			\"InitialSetupNetworkEnabled\":\"False\"\
+		}\
+	]}" &> $AFITOOLLOG
+}
+
+initial_setup_pb() {
+
+	log_debug "initial_setup_pb \"$1\" \"***\" \"***\" \"$4\" \"$5\""
+
+	local ssid="$1"
+	local wifipassword="$2"
+	local admpassword="$3"
+	local timezone="$4"
+	local open="$5"
+	local country="$(validate_wifi_country "US")"
+	local timestamp=2
+
+	local encr="Psk2"
+	[ "$open" = "1" ] && encr="None"
+
+	afitool -c  \
+		"{\"cmd\":\"initial_setup\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"$timestamp\"},\
+			{\
+				\"WifiConfig\":{\
+					\"Country\":\"$country\",\
+					\"RelayModeEnabled\":\"True\",\
+					\"WwanSsid\":\"$ssid\",\
+					\"WwanPassword\":\"$wifipassword\",\
+					\"WwanEncryption\":\"$encr\"\
+				},\
+				\"UsersConfig\":{\
+					\"admin\":{\
+						\"Role\":\"Admin\",\
+						\"Password\":\"$admpassword\"\
+					}\
+				},\
+				\"SiteConfig\":{\
+					\"Country\":\"$country\",\
+					\"ZoneName\":\"$timezone\"\
+				}\
+			}\
+		]}" > $AFITOOLLOG
+}
+
+wan_addr() {
+	local _json_no_warning=1
+	local status="$(ubus call network.interface.wan status 2>/dev/null)"
+	if [ "$status" ]; then
+		json_load "$status"
+		json_select ipv4-address
+		json_select 1
+		json_get_var addr address
+		echo "$addr"
+	fi
+}
+
+get_prefix() {
+	local netmask=$(echo "$1" | tr -d " ")
+	local prefix=24
+	[ "$netmask" = "255.255.255.252" ] && prefix=30
+	[ "$netmask" = "255.255.255.248" ] && prefix=29
+	[ "$netmask" = "255.255.255.240" ] && prefix=28
+	[ "$netmask" = "255.255.255.224" ] && prefix=27
+	[ "$netmask" = "255.255.255.192" ] && prefix=26
+	[ "$netmask" = "255.255.255.128" ] && prefix=25
+	[ "$netmask" = "255.255.255.0" ] && prefix=24
+	[ "$netmask" = "255.255.254.0" ] && prefix=23
+	[ "$netmask" = "255.255.252.0" ] && prefix=22
+	[ "$netmask" = "255.255.248.0" ] && prefix=21
+	[ "$netmask" = "255.255.240.0" ] && prefix=20
+	[ "$netmask" = "255.255.224.0" ] && prefix=19
+	[ "$netmask" = "255.255.192.0" ] && prefix=18
+	[ "$netmask" = "255.255.128.0" ] && prefix=17
+	[ "$netmask" = "255.255.0.0" ] && prefix=16
+	echo -n "$prefix"
+}
+
+is_teleport() {
+	if [ "$(get_ptype)" == "Teleport" ]; then
+		echo "1"
+	else
+		echo ""
+	fi
+}
+
+disable_band_restore() {
+	afitool -c \
+		'{"cmd":"set_property", "payload" :
+			{ "property" : "RestoreInitialSetupBands",
+			"iface" : "com.ubnt.UnifiHome.Device",
+			"payload" : { "value" : false }
+			}
+		}' &> $AFITOOLLOG
+}
+
+set_active_band() {
+	local band="2.4 GHz"
+	[ "$1" = "5" ] && band="5 GHz"
+	local timestamp="$(uci get wireless.wireless.timestamp 2>/dev/null)"
+	[ ! "$timestamp" ] && timestamp=2
+
+	afitool -c \
+		"{\"cmd\":\"wifi_config\",\"payload\":[\
+			{\"LastUpdateTimestamp\":\"$timestamp\"},\
+			{\
+				\"ActiveBand\":\"$band\"\
+			}]\
+		}" &> $AFITOOLLOG
+}
+
+check_update() {
+	[ "$(ubus call firmware info | grep '"status": "Ready to upgrade"')" ] && echo 1
+}
+
+freq_to_channel() {
+	local freq=$1
+	local ch=
+	if [ "$freq" -lt 5000 ]; then
+		ch=$(((freq-2412)/5+1))
+		[ "$ch" -gt 14 ] && ch=14
+	else
+		ch=$(((freq-5180)/5+36))
+	fi
+	echo "$ch"
+}
+
+switch_channel() {
+	local ch=$1
+	local timestamp="$(uci get wireless.wireless.timestamp 2>/dev/null)"
+	[ ! "$timestamp" ] && timestamp=2
+	if [ "$ch" -lt 15 ]; then
+		active_band="2.4"
+		active_band_ch_txt="Channel_2_4GHz"
+	else
+		active_band="5"
+		active_band_ch_txt="Channel_5GHz"
+	fi
+	log_debug "switch_channel afitool $timestamp $active_band $active_band_ch_txt $ch"
+	afitool -c '{ "cmd": "set_wifi_config", "payload": [ { "LastUpdateTimestamp": "'$timestamp'" }, { "ActiveBand": "'$active_band' GHz", "'$active_band_ch_txt'": "'$ch'" } ] }' &> $AFITOOLLOG
+}
+
+set_returnurl() {
+	local url="$1"
+	[ -f "$RETURNURL" ] && sed -i "/^$REMOTE_ADDR/d" "$RETURNURL"
+	echo "$REMOTE_ADDR $url" | head -n1  >> "$RETURNURL"
+}
+
+get_returnurl() {
+	if [ -s "$RETURNURL" ]; then
+		url=$(grep -E "^$REMOTE_ADDR" "$RETURNURL" | cut -d ' ' -f2-)
+		[ "$url" ] && echo "$url" || echo "index.php"
+		sed -i "/^$REMOTE_ADDR/d" "$RETURNURL"
+	else
+		echo 'index.php'
+	fi
+}
+
+get_homeurl() {
+	if [ -f "/etc/init.d/recovery" ]; then
+		echo -n '.'
+		return
+	fi
+
+	local json="$(ubus call ajconfd.Device GetNetworkConfig 2>/dev/null)"
+	json_load "$json" > /dev/null
+	json_get_var nw_wanbridgemode "Wan bridge mode"
+	json_get_var nw_bypassdnscache "BypassDnsCache"
+	json_cleanup
+
+	if [ "$nw_wanbridgemode" = "1" ] || [ "$nw_bypassdnscache" = "1" ] || [ "$(ubus call ajconfd.ClusterNode GetProperty '{"name": "NodeRole"}' 2>/dev/null | grep '"value":' | awk '{print $2}')" = "1" ]; then
+		echo -n '.'
+	else
+		echo -n 'http://amplifi.lan'
+	fi
+}
+
+remove_token() {
+	[ -s "$TOKENFILE" ] && sed -i "/^$REMOTE_ADDR/d" "$TOKENFILE"
+}
+
+get_teleport_ip() {
+	local json="$(ubus call ajconfd.ClusterNode GetPeerList 2>/dev/null)"
+
+	json_load "$json" > /dev/null
+	json_get_keys keys
+	for k in $keys; do
+		json_select "$k"
+		json_get_var ip "ip"
+		json_get_var flags "flags"
+
+		if [ "$((8 & $flags))" = "8" ]; then # if remote extender (TELEPORT)
+			echo "$ip"
+			return
+		fi
+		json_select
+	done
+}
+
+teleport_setup_step=0
+teleport_setup_state=0
+teleport_status_id=0
+teleport_status_msg=''
+
+teleport_set_status() {
+	teleport_setup_step="$1"
+	teleport_setup_state="$2"
+	teleport_status_id="$3"
+	teleport_status_msg="$4"
+}
+
+log_debug() {
+	logger "uhttpd: $@"
+	echo "$@" >> "$DEBUGLOG"
+}
+
+teleport_state() {
+
+	# 0
+
+	# 100 - OK - ready for setup
+	# 101 - WAITING - Input SSID and password
+	# 105 - IN PROGRESS - Checking local connectivity
+	# 110 - IN PROGRESS - establishing local connection
+	# 120 - WAITING - captive portal - user input required
+	# 130 - IN PROGRESS - checking wifi password and connecting
+	# 140 - IN PROGRESS - set up Teleport AP
+
+	# 150 - ERROR - no Internet Access - choose different connection
+	# 155 - ERROR - Ethernet cable unplugged
+	# 160 - ERROR - no IP address - choose different connection
+	# 170 - ERROR - DNS server problem - choose different connection
+	# 180 - ERROR - bad WiFi signal - move Teleport closer to AP or choose different WiFi network
+	# 190 - ERROR - wrong WiFi password
+
+	# 200 - IN PROGRESS - OK local connection
+	# 210 - IN PROGRESS - connecting to Internet
+	# 220 - IN PROGRESS - device_id received
+
+	# 255 - ERROR - No Internet
+	# 250 - ERROR - server not reachable - try again in a few minutes
+	# 260 - ERROR - server problem (Teleport did not register) - try again in a few minutes
+	# 270 - ERROR - router not online - try again in a few minutes
+
+	# 300 - IN PROGRES - Internet OK
+	# 310 - WAITING - pairing - waiting for pairing approval
+	# 320 - IN PROGRES - contacting router
+
+	# 350 - ERROR - could not get router IP or PORT
+	# 360 - ERROR - pairing request was rejected - try again in a few minutes
+
+	# 400 - IN PROGRES - OK Router
+	# 401 - IN PROGRESS - Setting up teleport SSID
+	# 405 - IN PROGRES - Getting network conflict info
+	# 406 - IN PROGRES - Network conflict detected but still trying to set up connection
+
+	# 410 - EXIT - OK TINC created, SPEEDTEST
+	# 420 - IN PROGRES - setting up final SSID
+
+	# 450 - ERROR - Router is not rachable - router did not answer to connection request
+	# 460 - ERROR - IP network conflict
+
+	# 500 - EXIT - OK SETUP FINISHED
+	# 501 - IN PROGRES - Home network connection will be available shortly
+
+	teleport_status_seconds_elapsed="$1"
+	[ ! "$teleport_status_seconds_elapsed" ] && teleport_status_seconds_elapsed=0
+
+	teleport_isolation_mode=$(uci get ajconfd.@device_config[0].ml_isolation_mode 2>/dev/null) # Full, CaptiveWan, !empty(Unknown)
+	teleport_connectivity_mode=$(uci get ajconfd.@device_config[0].ml_connectivity_mode 2>/dev/null) # Wired, ?Wireless
+	teleport_initial_setup_done=$(get_setup_done) # 1 0
+	teleport_skip_setup_confirmation=$(uci get ajconfd.@device_config[0].ml_skip_setup_confirmation 2>/dev/null) # 1 empty
+	ubus call ajconfd.Device GetPairing | grep -q "router" && teleport_is_paired=1 || teleport_is_paired=0 # 1 0
+
+	teleport_tinc_enabled=$(uci get tinc.amplifi.enabled 2>/dev/null) # 1 0
+
+	teleport_device_id=$(uci get ajconfd.@device_config[0].ml_device_id 2>/dev/null)
+
+	teleport_mac=$(uci show ajconfd | grep -m 1 ".platform_name=\'AFi-T\'" | awk -F'.' '{print $2}');
+	router_mac=$(uci show ajconfd | grep -m 1 ".role=\'router\'" | awk -F'.' '{print $2}');
+
+	teleport_initial_sync_needed=$(uci ajconfd.$teleport_mac.initial_sync_needed 2>/dev/null) # 1 empty
+
+	teleport_adoption_state=$(uci get tinc.$teleport_mac.adoption_state 2>/dev/null) # unknown  pending
+	router_adoption_state=$(uci get tinc.$router_mac.adoption_state 2>/dev/null) # none  adopted
+
+	router_public_ip=$(uci get tinc.$router_mac.Address 2>/dev/null)
+
+	inet_status_str=$(ubus call inetcheck check | grep 'inet_status_str' | cut -d '"' -f 4) # INET_STATUS_RED INET_STATUS_GREEN
+	inet_reason_str=$(ubus call inetcheck check | grep 'inet_reason_str' | cut -d '"' -f 4) # INET_REASON_NO_ADDR
+
+	# sometimes after enetering isolation mode there are still files in /tmp/tinc/amplifi/conn/, give 20 seconds to remove them
+	[ "$(ls /tmp/tinc/amplifi/conn/ 2>/dev/null)" ] && ( [ ! -s "$CONFIGMODELOCK" ] || [ "$(date -r "$CONFIGMODELOCK" +%s)" -lt "$(( $(date +%s) - 71 ))" ] ) && teleport_tinc_active=1
+
+	# step 1 local connection, 2 Internet, 3 AmpliFi Router, 4 Home network (tinc), 5 Isolation (captive portal) off
+	# state 1 ok, 2 in progress, 3 waiting, 4 error, 5 finished
+
+	if [ "$teleport_is_paired" = "0" ]; then
+		teleport_set_status 1 3 10 'Please pair with AmpliFi system'
+
+	elif [ ! "$teleport_isolation_mode" ]; then # teleport in normal mode
+		if [ "$(ip -4 a | grep 'br-lan' | grep 'scope' | grep -v ' 169.254' | cut -d'.' -f 4 | cut -d'/' -f 1)" != "1" ]; then
+			teleport_set_status 5 1 500 'Everything is great!'
+
+		else
+			teleport_set_status 5 1 501 'Home network connection will be available shortly'
+
+		fi
+
+	elif [ "$teleport_isolation_mode" = "CaptiveWan" ]; then
+		teleport_set_status 1 3 120 'Please complete authorization on captive portal'
+
+	elif [ ! "$(uci get wireless.wireless.timestamp 2>/dev/null)" -a ! -s "$TELEPORTAP" ]; then
+		teleport_set_status 1 3 101 'Enter Teleport SSID and password'
+
+	else # Full
+		if [ "$teleport_tinc_active" ]; then
+			if [ -s "$TELEPORTAP" ]; then
+				teleport_set_status 4 2 401 'Setting up Teleport SSID'
+
+			elif [ "$teleport_skip_setup_confirmation" = 1 ]; then # if skip confirmation is set
+				teleport_set_status 4 1 420 'Home network connection will be available shortly'
+
+			else
+				teleport_set_status 4 2 401 'Setting up Teleport SSID' # set skip confirmation
+
+			fi
+
+		elif [ "$inet_status_str" = "INET_STATUS_GREEN" ]; then
+			if [ "$teleport_initial_setup_done" = "0" ]; then # initial setup not done
+				if [ -s "$TELEPORTAP" ]; then
+					teleport_set_status 1 2 140 'Setting up Teleport SSID'
+				else
+					teleport_set_status 1 3 101 'Enter Teleport SSID and password'
+				fi
+
+			elif [ "$teleport_adoption_state" = "adopted" ]; then
+				if [ "$router_public_ip" ]; then
+
+					json="$(ubus call ajconfd.MagicLink MlGetConnectivityStatus 2>/dev/null)"
+
+					json_load "$json" > /dev/null
+					json_get_var MlGetConnectivityStatus_same_network "same_network"
+					json_get_var MlGetConnectivityStatus_network_conflict "network_conflict"
+					json_select "status" > /dev/null
+					json_get_var MlGetConnectivityStatus_error "error" > /dev/null
+
+					if [ "$MlGetConnectivityStatus_same_network" = "yes" ]; then # Teleport and it's router are on the same network
+						teleport_set_status 3 5 455 'Setup is finished. Relocate the Teleport to different network. This may include different home, office, public Wi-Fi, or mobile hotspot.'
+
+					elif [ "$MlGetConnectivityStatus_network_conflict" = "yes" -a "$teleport_status_seconds_elapsed" -lt 90 ]; then # Teleport and it's router are on the same subnet (but not the same network), less than 90 seconds passed
+						teleport_set_status 4 2 406 "Network conflict detected - still trying to set up connection. It is strongly recommended to connect Teleport to a different network or change Router's DHCP network range."
+
+					elif [ "$MlGetConnectivityStatus_network_conflict" = "yes" ]; then # Teleport and it's router are on the same subnet (but not the same network)
+						teleport_set_status 4 4 460 "Network conflict detected - home network connection could not be set up. Please connect Teleport to a different network or change Router's DHCP network range."
+
+					elif [ "$MlGetConnectivityStatus_same_network" = "not_applicable" ]; then # waiting for info on network conflicts
+						teleport_set_status 4 2 405 'Setting up secure connection'
+
+					elif [ "$teleport_status_seconds_elapsed" -lt 90 ]; then # less than 90 seconds elapsed while trying to set up tinc
+						teleport_set_status 4 2 400 'Setting up secure connection'
+
+					else # 90 seconds elapsed and tinc not ready
+						if [ ! "$MlGetConnectivityStatus_error" ]; then # if no error message
+							teleport_set_status 4 2 400 'Setting up secure connection'
+
+						else # error
+							error_msg=$MlGetConnectivityStatus_error
+							[ "$MlGetConnectivityStatus_error" = "Timeout (0) - Timeout" ] && error_msg="Router is not responding"
+							[ "$MlGetConnectivityStatus_error" = "Connection failed: Connection refused - Timeout" ] && error_msg="Connection refused"
+							teleport_set_status 4 4 450 "Could not create connection ($error_msg)"
+							log_debug "showing error message: \"$MlGetConnectivityStatus_error\""
+
+						fi
+					fi
+				else # router ip empty
+					if [ "$teleport_status_seconds_elapsed" -lt 30 ]; then # less than 30 seconds elapsed while trying to get router ip or port
+						teleport_set_status 3 2 320 'Looking for AmpliFi Router details'
+
+					else
+						teleport_set_status 3 4 350 'Router details are unknown. Possibly there is an UPnP problem (check using mobile app).'
+					fi
+				fi
+
+			# add router offline handling here
+			elif [ "$teleport_adoption_state" = "rejected" ]; then
+				teleport_set_status 3 4 360 'AmpliFi owner declined pairing request'
+
+			elif [ "$teleport_adoption_state" = "pending" ]; then
+				teleport_set_status 3 3 310 'Open AmpliFi mobile app and accept pairing request' # Waiting for pairing approval
+
+			elif [ "$teleport_device_id" ]; then
+				teleport_set_status 2 2 220 'Making connection'
+
+			else
+				teleport_set_status 2 2 210 'Checking internet'
+
+			fi
+
+		elif [ -s "$WIFIPASSWORDCHECKLOCK" ] && [ "$(date -r "$WIFIPASSWORDCHECKLOCK" +%s)" -ge "$(( $(date +%s) - 30 ))" ]; then # if password check in progress
+			teleport_set_status 1 2 130 'Checking WiFi password and connecting'
+
+		elif [ -s "$WIFIPASSWORDCHECKRESULT" ]; then # if wrong password
+			checked_ssid="$(cat $WIFIPASSWORDCHECKRESULT)"
+			[ "$teleport_status_seconds_elapsed" -gt 15 ] && rm -f "$WIFIPASSWORDCHECKRESULT"
+			teleport_set_status 1 2 190 "$checked_ssid"
+
+		elif [ "$teleport_connectivity_mode" = "Wireless" ]; then
+			if [ "$(iw wlan0 info 2>/dev/null | grep 'type managed')" ]; then # check if managed mode
+				if [ "$(iw wlan0 info 2>/dev/null | grep '\tchannel')" ]; then # if associated
+					if [ "$teleport_status_seconds_elapsed" -lt 90 ]; then
+						teleport_set_status 2 2 200 'Connecting to internet'
+					else
+						teleport_set_status 2 4 255 'No internet connection detected'
+					fi
+				else
+					teleport_set_status 1 2 110 'Connecting to WiFi'
+
+				fi
+			else
+				teleport_set_status 1 3 100 'Select wireless network'
+
+			fi
+
+		elif [ "$teleport_connectivity_mode" = "Wired" ]; then
+			if [ "$(cat /sys/class/net/eth0/carrier 2> /dev/null)" = "1" ]; then	# Ethernet cable connected
+				if [ "$(ip route | grep default)" ]; then # is default route
+					if [ "$teleport_status_seconds_elapsed" -lt 90 ]; then
+						teleport_set_status 2 2 200 'Connecting to internet'
+					else
+						teleport_set_status 2 4 255 'No internet connection detected'
+					fi
+
+				else # no default route
+					teleport_set_status 1 2 105 'Checking local connectivity'
+
+				fi
+			else # Ethernet cable not connected
+				teleport_set_status 1 3 100 'Select wireless network or plug in Ethenet cable'
+
+			fi
+		else
+			# fallback
+			teleport_set_status 1 3 100 'Ready for setup'
+
+		fi
+	fi
+
+	#echo "$(date +%s) $SCRIPT_NAME $teleport_status_id $teleport_status_msg" >> /tmp/webui.debug.statelog
+
+	echo "teleport_setup_step id $teleport_setup_step" > /tmp/webui.debug.state
+	echo "teleport_setup_state id $teleport_setup_state" >> /tmp/webui.debug.state
+	echo "teleport_status_id id $teleport_status_id" >> /tmp/webui.debug.state
+	echo "teleport_status_msg $teleport_status_msg" >> /tmp/webui.debug.state
+	echo "teleport_status_seconds_elapsed $teleport_status_seconds_elapsed" >> /tmp/webui.debug.state
+	echo "teleport_isolation_mode: $teleport_isolation_mode" >> /tmp/webui.debug.state
+	echo "teleport_connectivity_mode: $teleport_connectivity_mode" >> /tmp/webui.debug.state
+	echo "teleport_initial_setup_done: $teleport_initial_setup_done" >> /tmp/webui.debug.state
+	echo "teleport_is_paired: $teleport_is_paired" >> /tmp/webui.debug.state
+	echo "teleport_skip_setup_confirmation: $teleport_skip_setup_confirmation" >> /tmp/webui.debug.state
+	echo "teleport_tinc_enabled: $teleport_tinc_enabled" >> /tmp/webui.debug.state
+	echo "teleport_tinc_active: $teleport_tinc_active" >> /tmp/webui.debug.state
+	echo "teleport_mac: $teleport_mac" >> /tmp/webui.debug.state
+	echo "router_mac: $router_mac" >> /tmp/webui.debug.state
+	echo "teleport_initial_sync_needed: $teleport_initial_sync_needed" >> /tmp/webui.debug.state
+	echo "teleport_adoption_state: $teleport_adoption_state" >> /tmp/webui.debug.state
+	echo "router_adoption_state: $router_adoption_state" >> /tmp/webui.debug.state
+	echo "router_public_ip: $router_public_ip" >> /tmp/webui.debug.state
+	echo "inet_status_str: $inet_status_str" >> /tmp/webui.debug.state
+	echo "inet_reason_str: $inet_reason_str" >> /tmp/webui.debug.state
+	echo "MlGetConnectivityStatus_error: $MlGetConnectivityStatus_error" >> /tmp/webui.debug.state
+	echo "MlGetConnectivityStatus_same_network: $MlGetConnectivityStatus_same_network" >> /tmp/webui.debug.state
+	echo "MlGetConnectivityStatus_network_conflict: $MlGetConnectivityStatus_network_conflict" >> /tmp/webui.debug.state
+}

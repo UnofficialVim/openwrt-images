@@ -1,0 +1,10 @@
+Package: afi-recovery-meta
+Version: 1.0.0-1
+Depends: libc, busybox
+Source: package/ubiquiti/afi-recovery-meta
+SourceName: afi-recovery-meta
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 1527
+Description:  Meta package to enable misc settings

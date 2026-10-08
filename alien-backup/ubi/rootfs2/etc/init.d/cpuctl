@@ -1,0 +1,15 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+set_governor() {
+	governor=`uci get cpufreq.policy0.scaling_governor`
+	echo $governor > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
+}
+
+boot() {
+	set_governor
+}
+reload_service() {
+	set_governor
+}

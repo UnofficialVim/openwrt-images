@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="33px" height="35px" viewBox="0 0 33 35" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 42 (36781) - http://www.bohemiancoding.com/sketch -->
+    <title>message-green</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="1st-scenerio" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Setup" transform="translate(-932.000000, -650.000000)" fill-rule="nonzero">
+            <g id="message-green" transform="translate(932.000000, 650.000000)">
+                <g id="Group">
+                    <path d="M27.6874003,29.75 L5.19138756,29.75 L0,35 L0,5.25 C0,2.3625 2.3361244,0 5.19138756,0 L27.6874003,0 C30.5426635,0 32.8787879,2.3625 32.8787879,5.25 L32.8787879,24.5 C32.8787879,27.3875 30.5426635,29.75 27.6874003,29.75 Z" id="Shape" fill="#009688"></path>
+                    <g transform="translate(5.191388, 12.250000)" id="Oval" fill="#FFFFFF">
+                        <ellipse cx="11.2480064" cy="2.625" rx="2.59569378" ry="2.625"></ellipse>
+                        <ellipse cx="19.900319" cy="2.625" rx="2.59569378" ry="2.625"></ellipse>
+                        <ellipse cx="2.59569378" cy="2.625" rx="2.59569378" ry="2.625"></ellipse>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

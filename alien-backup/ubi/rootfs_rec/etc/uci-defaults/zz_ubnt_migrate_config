@@ -1,0 +1,237 @@
+#!/bin/sh
+
+. /lib/functions/board.sh
+. /lib/functions/afi.sh
+. /lib/functions/system.sh
+
+dhcp_disable_dhcpv6()
+{
+	uci set dhcp.guest.dhcpv6=disabled
+	uci set dhcp.lan.dhcpv6=disabled
+	uci commit dhcp
+}
+
+enable_plex_rebind()
+{
+	uci -q get dhcp.@dnsmasq[0].rebind_domain | grep plex.direct >/dev/null
+	if [ $? -ne 0 ]; then
+		uci add_list dhcp.@dnsmasq[0].rebind_domain='plex.direct'
+		uci commit dhcp
+	fi
+}
+
+dhcp_delete_anonymous_domain_sections()
+{
+uci -q get dhcp.afi_hostname.domain >/dev/null
+if [ $? -ne 0 ]; then
+	# Delete old entries
+	uci delete dhcp.@domain[0]
+	uci delete dhcp.@domain[0]
+	uci delete dhcp.@domain[0]
+	uci delete dhcp.@address[0]
+	uci delete dhcp.@address[0]
+	uci delete dhcp.@address[0]
+	uci commit dhcp
+fi
+}
+
+add_dns_whitelist()
+{
+	local list="\
+		/amplifi.com/# \
+		/googleapis.com/# \
+		/google.com/# \
+		/gstatic.com/# \
+		/ggpht.com/# \
+		/google.cn/# \
+		/gstatic.cn/# \
+		/riga.corp.ubnt.com/# \
+		/fw-download.ubnt.com/# \
+		/www.ubnt.com/# \
+		/0.ubnt.pool.ntp.org/# \
+		/1.ubnt.pool.ntp.org/# \
+		/2.ubnt.pool.ntp.org/# \
+		/3.ubnt.pool.ntp.org/# \
+		"
+	[ "$(uci -q get dhcp.@dnsmasq[0].server)" = "$list" ] && return
+	uci -q delete dhcp.@dnsmasq[0].server
+	for d in $list; do
+		uci add_list dhcp.@dnsmasq[0].server="$d"
+	done
+	uci commit dhcp
+}
+
+# WARNING: this one is kind of permanent, unless we find a better place
+migrate_dhcp()
+{
+	uci -q get dhcp.guest >/dev/null
+	if [ $? -gt 0 ]; then
+		uci batch <<EOF
+set dhcp.guest=dhcp
+set dhcp.guest.interface=guest
+set dhcp.guest.option start=100
+set dhcp.guest.limit=150
+set dhcp.guest.leasetime=1h
+commit dhcp
+EOF
+	fi
+
+	uci -q get dhcp.guest.leasetime | grep "12h" > /dev/null
+	if [ $? -eq 0 ]; then
+		uci batch <<EOF
+set dhcp.guest.leasetime=1h
+commit dhcp
+EOF
+	fi
+
+	uci -q get dhcp.guest.dhcpv4 >/dev/null
+	if [ $? -gt 0 ]; then
+		uci batch <<EOF
+set dhcp.guest.dhcpv4=server
+set dhcp.guest.ra=server
+set dhcp.guest.ra_default=0
+set dhcp.guest.ra_force_valid_prefix=1
+set dhcp.guest.ignore=1
+commit dhcp
+EOF
+	fi
+
+	uci -q get dhcp.lan.dhcpv4 >/dev/null
+	if [ $? -gt 0 ]; then
+		uci batch <<EOF
+set dhcp.lan.dhcpv4=server
+set dhcp.lan.ra=server
+set dhcp.lan.ra_default=0
+set dhcp.lan.ra_force_valid_prefix=1
+set dhcp.lan.ignore=1
+commit dhcp
+EOF
+	fi
+
+	uci set dhcp.@dnsmasq[0].readethers=0
+	uci set dhcp.odhcpd.maindhcp=1
+	uci commit dhcp
+
+	dhcp_disable_dhcpv6
+	enable_plex_rebind
+	dhcp_delete_anonymous_domain_sections
+	add_dns_whitelist
+}
+
+migrate_uhttpd()
+{
+	uci set uhttpd.main.script_timeout='180'
+	uci set uhttpd.main.network_timeout='150'
+	uci set uhttpd.main.home='/www/html'
+	uci commit uhttpd
+}
+
+add_wwan()
+{
+uci -q get network.wwan >/dev/null
+if [ $? -ne 0 ]; then
+	uci set network.wwan=interface
+	uci set network.wwan.disabled=1
+	uci commit network
+fi
+}
+
+nodogsplash_redirect_from_dst()
+{
+uci -q get nodogsplash.@instance[0].redirectfromdst >/dev/null
+if [ $? -ne 0 ]; then
+	uci set nodogsplash.@instance[0].redirectfromdst='1.2.3.4'
+	uci commit nodogsplash
+fi
+}
+
+add_firewall_dscp_include() {
+	uci -q get firewall.ajconfd >/dev/null
+	if [ $? -ne 0 ]; then
+		uci batch <<EOF
+set firewall.ajconfd=include
+set firewall.ajconfd.path=/usr/share/ajconfd/dscp.sh
+set firewall.ajconfd.reload=1
+commit firewall
+EOF
+	fi
+}
+
+firewall_wan_input_drop()
+{
+	uci set firewall.@zone[2].input='DROP'
+	uci commit firewall
+}
+
+add_analytics_sending()
+{
+	uci -q get ajconfd.@site_config[0].send_analytics_enabled >/dev/null
+	if [ $? -ne 0 ]; then
+		uci batch <<EOF
+set ajconfd.@site_config[0].send_analytics_enabled=1
+commit ajconfd
+EOF
+	fi
+}
+
+disable_stp()
+{
+	uci -q delete network.lan.stp && uci commit network
+	uci -q delete network.guest.stp && uci commit network
+}
+
+add_lan6()
+{
+	uci -q get network.lan6 >/dev/null
+	if [ $? -gt 0 ]; then
+		uci batch <<EOF
+set network.lan6=interface
+set network.lan6.ifname='@lan'
+set network.lan6.proto='dhcpv6'
+set network.lan6.disabled=1
+commit
+EOF
+	fi
+}
+
+board=$(board_name)
+shortname=$(afi_board_shortname)
+
+echo "Configuration migration: $fw_prev -> $fw_this" > /dev/kmsg
+# 'fw_this' is always current version (format 1.2.3)
+# 'fw_prev' is any of the following:
+#  - 1.2.3   : normal version number
+#  - none    : factory defaults
+#  - unknown : not default cfg, prev version N/A (always the case for 16MB HW)
+
+# common migrations
+add_wwan
+disable_stp
+migrate_uhttpd
+nodogsplash_redirect_from_dst
+add_analytics_sending
+
+case "$board" in
+ubiquiti,afi-aln-r)
+	case "$shortname" in
+	*)
+		migrate_dhcp
+
+		add_firewall_dscp_include
+		firewall_wan_input_drop
+		add_lan6
+		;;
+	esac
+	;;
+
+ubiquiti,afi-aln-p)
+	/usr/bin/prst_tool -r pairing 2>/dev/null | grep -q '}'
+	if [ $? -gt 0 ]; then
+		migrate_dhcp
+	else
+		dhcp_disable_dhcpv6
+	fi
+	;;
+esac
+
+exit 0

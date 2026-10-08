@@ -1,0 +1,2 @@
+/etc/modules.d/09-crypto-michael-mic
+/lib/modules/6.12.63/michael_mic.ko

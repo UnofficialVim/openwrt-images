@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+case "$ACTION" in
+pressed)
+        ubus -t2 call uictld button-pressed || \
+        ( cat /proc/pwrbox/pl7411_is_alive | grep -q 0 && \
+        echo 0 > /sys/class/gpio/gpio2/value )
+;;
+
+released)
+        ubus call uictld button-released
+;;
+esac

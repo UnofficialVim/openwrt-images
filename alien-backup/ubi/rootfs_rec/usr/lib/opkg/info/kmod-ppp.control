@@ -1,0 +1,10 @@
+Package: kmod-ppp
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (=ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-lib-crc-ccitt, kmod-slhc
+Source: package/kernel/linux
+SourceName: kmod-ppp
+License: GPL-2.0
+Section: kernel
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 23102
+Description:  Kernel modules for PPP support

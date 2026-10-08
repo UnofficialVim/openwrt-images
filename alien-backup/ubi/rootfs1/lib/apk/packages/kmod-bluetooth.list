@@ -1,0 +1,5 @@
+/etc/modules.d/bluetooth
+/lib/modules/6.12.63/bluetooth.ko
+/lib/modules/6.12.63/bnep.ko
+/lib/modules/6.12.63/hidp.ko
+/lib/modules/6.12.63/rfcomm.ko

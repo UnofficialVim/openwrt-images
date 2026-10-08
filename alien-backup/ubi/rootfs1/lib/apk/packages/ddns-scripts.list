@@ -1,0 +1,9 @@
+/etc/config/ddns
+/etc/hotplug.d/iface/95-ddns
+/etc/init.d/ddns
+/etc/uci-defaults/50-ddns-migrate-retry-count
+/usr/bin/ddns
+/usr/lib/ddns/dynamic_dns_functions.sh
+/usr/lib/ddns/dynamic_dns_lucihelper.sh
+/usr/lib/ddns/dynamic_dns_updater.sh
+/usr/share/ddns/version

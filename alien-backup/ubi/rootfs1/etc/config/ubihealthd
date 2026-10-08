@@ -1,0 +1,13 @@
+
+config ubi-device 'ubi0'
+	option device '/dev/ubi0'
+	option enable '1'
+
+config ubi-device 'ubi15'
+	option device '/dev/ubi15'
+	option enable '1'
+
+config ubi-device 'ubi16'
+	option device '/dev/ubi16'
+	option enable '1'
+

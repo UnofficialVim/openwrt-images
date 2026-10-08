@@ -1,0 +1,40 @@
+#!/bin/sh /etc/rc.common
+
+START=00
+STOP=95
+
+mount_wifi_fw()
+{
+	local board=$(board_name)
+	local mtdblock=$(find_mtd_part ART)
+	local caldata_tmp="/tmp/IPQ8074/caldata.bin"
+	local caldata="/lib/firmware/IPQ8074/caldata.bin"
+	local caldata_v2="/lib/firmware/IPQ8074v2/caldata.bin"
+	local calsize=131072
+
+	[ -n "$mtdblock" ] || return
+
+	mkdir -p /tmp/IPQ8074
+	dd if=$mtdblock of=$caldata_tmp bs=1 count=$calsize skip=4096
+	[ -L $caldata ] || ln -s $caldata_tmp $caldata
+	[ -L $caldata_v2 ] || ln -s $caldata_tmp $caldata_v2
+}
+
+boot()
+{
+	. /lib/functions/uci-defaults.sh
+
+	local board=$(board_name)
+
+	case "$board" in
+	ap-hk* |\
+	ubiquiti,afi-aln*)
+		mount_wifi_fw
+		;;
+	esac
+}
+
+stop()
+{
+	return 0
+}

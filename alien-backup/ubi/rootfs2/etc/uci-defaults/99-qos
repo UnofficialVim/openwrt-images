@@ -1,0 +1,38 @@
+#!/bin/sh
+
+uci -q get firewall.qos >/dev/null
+if [ $? -ne 0 ]; then
+  uci batch <<EOF
+set firewall.qos=include
+set firewall.qos.type=script
+set firewall.qos.path=/usr/share/qos/firewall.include
+set firewall.qos.reload=0
+commit firewall
+EOF
+fi
+
+#
+# QoS configuration must be updated together with firmware
+# If versions do not match, lets unroll new default config
+# and apply previous configurable values.
+#
+
+orig_version=`uci get 'qos.wan.version'`
+
+# Version here must match default config version in ../config/qos
+# Change both every time when ../config/qos is updated
+
+new_version="2018-11-13-001"
+
+if [ "$orig_version" != "$new_version" ]; then
+  orig_admin_enabled=`uci get 'qos.wan.admin_enabled'`
+  orig_download=`     uci get 'qos.wan.download'`
+  orig_upload=`       uci get 'qos.wan.upload'`
+
+  tar -zxf /etc/default.tar.gz etc/config/qos -C /
+
+  uci set qos.wan.admin_enabled=$orig_admin_enabled
+  uci set qos.wan.download=$orig_download
+  uci set qos.wan.upload=$orig_upload
+  uci commit
+fi

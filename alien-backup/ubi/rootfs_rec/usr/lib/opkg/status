@@ -1,0 +1,1021 @@
+Package: iwinfo
+Version: 2019-05-21-073a8388-1
+Depends: libc, libiwinfo20181126
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-lib-textsearch
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libc
+Version: 1.1.22-1
+Depends: libgcc1
+Status: install hold,user installed
+Essential: yes
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-l2tp
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-udptunnel4, kmod-udptunnel6
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: opkg
+Version: 2019-01-31-d4ba162b-1
+Depends: libc, uclient-fetch, libpthread, libubox20170601
+Status: install user installed
+Essential: yes
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/opkg.conf f38c19f696ea87c0b30eb5bfeb8657237f4625e1a749c58b99f01595edfb6446
+ /etc/opkg/customfeeds.conf 61d1f3aa62fe977614ed0c2f0ad3b2ee2f7b451bfb34812071d86d31a4d43d4a
+Installed-Time: 1571839969
+
+Package: iptables-mod-extra
+Version: 1.8.2-3
+Depends: libc, iptables, kmod-ipt-extra
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-bonding
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: cfg-tool
+Version: 84bb125e173e20c7d06b5dbf744be1216ddc879a-1
+Depends: libc, libopenssl1.1, ubnt-meta
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: libpthread
+Version: 1.1.22-1
+Depends: libgcc1
+Status: install hold installed
+Essential: yes
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: ubus
+Version: 2018-10-06-221ce7e7-1
+Depends: libc, libubus20170705, libblobmsg-json, ubusd
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: iw
+Version: 5.0.1-1
+Depends: libc, libnl-tiny
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libuci20130104
+Version: 2019-05-17-f199b961-3
+Depends: libc, libubox20170601
+Provides: libuci
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: busybox
+Version: 1.30.1-3
+Depends: libc, jsonfilter
+Status: install user installed
+Essential: yes
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Alternatives: 100:/usr/bin/find:/bin/busybox, 100:/usr/bin/flock:/bin/busybox, 100:/usr/bin/free:/bin/busybox, 100:/sbin/ip:/bin/busybox, 100:/bin/kill:/bin/busybox, 100:/usr/bin/pgrep:/bin/busybox, 100:/bin/ps:/bin/busybox, 100:/usr/bin/top:/bin/busybox, 100:/usr/bin/uptime:/bin/busybox, 100:/usr/bin/xargs:/bin/busybox
+
+Package: odhcpd
+Version: 2019-05-17-d1118093-3
+Depends: libc, libubox20170601, libuci20130104, libubus20170705, libnl-tiny
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-qca-nss-drv-vlan-mgr
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+740d0102c5-2
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-bonding, kmod-qca-nss-drv
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: ip-full
+Version: 5.0.0-1
+Depends: libc, libnl-tiny, libelf1
+Provides: ip
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+Alternatives: 300:/sbin/ip:/usr/libexec/ip-full
+
+Package: kmod-afi-leds
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-ipq807x-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ubnt-hal
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-nf-reject6
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: prst-tool
+Version: 918220c755-1
+Depends: libc, libopenssl1.1
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-qca-wifi
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+cb9c67a225-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), libgcc1, libc, wireless-tools, librt, libnl200, libxml2, ip-full, kmod-ubnt-hal, kmod-qca-nss-drv, qca-wifi-fw-headers, qca-wifi-hk-fw, qca-wifi-hk-fw_v2, qca-common-tools, qca-qsdk-bin
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-nf-flow
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-conntrack
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: uh-fw-tool
+Version: d6f3253012a06c04a690b31a3b5632038e408b58-1
+Depends: libc, mtd, libopenssl1.1
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-lib-crc-ccitt
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-gre
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-iptunnel
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-pppoe
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ppp, kmod-pppox
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-nf-nathelper
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-nat
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-pppox
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ppp
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-hwmon-lm63
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-hwmon-core, kmod-i2c-core, kmod-regmap-i2c
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-ipt-conntrack
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ipt-core, kmod-nf-conntrack
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-nf-reject
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: base-files
+Version: 197-r10144+38-66d1c29655
+Depends: libc, netifd, procd, jsonfilter, usign, openwrt-keyring, ubi-utils, fstools, fwtool
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/config/cpufreq 290b6147a22ebcbccffa5f0eb922f2c10fd3a28625c61dc8594785c655a1a8ff
+ /etc/config/rpcd eee01d64b80d32d7a3fc8f44627391c810c116bf50dee8790ef84de88663530f
+ /etc/config/system 4b7a5ecc9355eef8a5475b04c69faaf7a60a29cb9d2e00b29149d8b8efcde126
+ /etc/config/system 4b7a5ecc9355eef8a5475b04c69faaf7a60a29cb9d2e00b29149d8b8efcde126
+ /etc/ethers 56bda09b0aa3d1e88107bfa8a1c6e4449d5c1f47245dc1c4037ff9b5db163b7c
+ /etc/group 50acd1e5e1223c9f81f26045724fc3e5be0c31f62687a35c29244d0234910588
+ /etc/hosts c1a978d90673437b35fa9494e0a54294062c152bb653d490b718052ab88447fd
+ /etc/inittab eefba8151834703249219e32426ae6c0e2cc9cdcb1d2094536de1ac4af955478
+ /etc/iproute2/rt_protos a0712b1771c8d5f3e0dcf9a6314880e71aa3498ea1ae873535bdfcf70d814061
+ /etc/iproute2/rt_tables 72cdc73d173994fe22acc556eaaa24f06b515a2c4a5827bf1ab0ff659c67766e
+ /etc/passwd 9029eaf0e3b16de8019f26fee94c56b4427edfb79a1805ddfdf418a26a277ea0
+ /etc/profile 9e36315e247bae64a6027c973cb421ff6fd76b8eae5adbac824cc8ad63f5a996
+ /etc/protocols 7d551355d5540b07b9d86e623cbbc4abecbb94d2a662b3afcc917940eb0e3d52
+ /etc/rc.local 515018aa94eb4937dade12dc0d69890b352af35a5ab5fb8203f9ed10990ac06f
+ /etc/services 754ccc71ca347bc79ac4c45139d416b7cf1e65a919dad1db15613a216cd6b9cc
+ /etc/shadow d66689b1513e51770694b894d62d61951730d6e1336b8bf985b76f2a2c51ea8c
+ /etc/shells 8b35ce73c18161a7d7ed16fa244410993bd031515260e3e0c11749047df48d0a
+ /etc/sysctl.conf c02fe88dc055a1eaee9e7cb631760a3a5a9cea55610b42aa45196838c6f1a55e
+ /etc/sysupgrade.conf 9e87b05fe2f12c84d1c465b396322748479f64bc40e5bab061887f0bd95020a6
+Installed-Time: 1571839969
+
+Package: kmod-nf-nat
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-conntrack
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-qca-nss-ecm-premium-noload
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+9228212b42-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-qca-nss-drv, iptables-mod-extra, kmod-ipt-conntrack, kmod-l2tp, kmod-pppol2tp, kmod-bonding, kmod-pptp, kmod-pppoe
+Provides: kmod-qca-nss-ecm-premium
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: netifd
+Version: 2019-05-28-beb810db-2
+Depends: libc, libuci20130104, libnl-tiny, libubus20170705, ubus, ubusd, jshn, libubox20170601
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-ipt-raw
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ipt-core
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libnl-route200
+Version: 3.4.0-2
+Depends: libc, libnl-core200
+Provides: libnl-route
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: uboot-envtools
+Version: 2018.03-3
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: qca-diag
+Version: 9aea0d89ac-1
+Depends: libc, libpthread
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: dnsmasq
+Version: 2.80-11
+Depends: libc, libubus20170705
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/config/dhcp e90f7b32e9c4e8f526a435607f792aa0439dd69fabfe1038eed5b27efc616be0
+ /etc/dnsmasq.conf 1e6ab19c1ae5e70d609ac7b6246541d52042e4dee1892f825266507ef52d7dfd
+Installed-Time: 1571839969
+
+Package: webui-recovery
+Version: 15b0abc9ce5c084651c82a99eb81d484b642424c-9
+Depends: libc, uhttpd, uh-fw-tool
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: procd
+Version: 2019-05-30-ade00ca5-1
+Depends: libc, ubusd, ubus, libjson-script, ubox, libubox20170601, libubus20170705
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libuclient20160123
+Version: 2019-05-30-3b3e368d-1
+Depends: libc, libubox20170601
+Provides: libuclient
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: libnl200
+Version: 3.4.0-2
+Depends: libc, libnl-genl200, libnl-route200, libnl-nf200
+Provides: libnl
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: ubusd
+Version: 2018-10-06-221ce7e7-1
+Depends: libc, libubox20170601, libblobmsg-json
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libubox20170601
+Version: 2019-02-27-eeef7b50-1
+Depends: libc
+Provides: libubox
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libelf1
+Version: 0.176-2
+Depends: libc, zlib
+Provides: libelf, libelf1-1
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-iptunnel
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-i2c-core
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libxtables12
+Version: 1.8.2-3
+Depends: libc
+Provides: libxtables
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libuhsys
+Version: 039f99b19f62164180497f2da21888f559074b63-1
+Depends: libc, kmod-ubnt-hal, libuci20130104
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libiwinfo20181126
+Version: 2019-05-21-073a8388-1
+Depends: libc, libnl-tiny, libuci20130104, libubus20170705
+Provides: libiwinfo
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-pptp
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ppp, kmod-gre, kmod-pppox
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-qca-nss-drv-bridge-mgr
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+740d0102c5-2
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-qca-nss-drv-vlan-mgr
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: firewall
+Version: 2019-01-02-70f8785b-2
+Depends: libc, libubox20170601, libubus20170705, libuci20130104, libip4tc0, libip6tc0, libxtables12, kmod-ipt-core, kmod-ipt-conntrack, kmod-nf-conntrack6, kmod-ipt-nat
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/config/firewall 0992818cc3d70c088e61972b5b09424b149f40dfc69bca46e4471385c8f393c0
+ /etc/firewall.user ad0180ff92b4264601756d35b93a94ad2c99e604918706e9001512a85f0c0c0b
+Installed-Time: 1571839969
+
+Package: libxml2
+Version: 2.9.8-1
+Depends: libc, libpthread, zlib
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: afi-recovery-meta
+Version: 1.0.0-1
+Depends: libc, busybox
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-nf-ipt
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: authscript
+Version: 5ea9a246cc-1
+Depends: libc, mtd, libopenssl1.1, libuhsys
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: ubnt-zeroconf
+Version: 1.0.0-1
+Depends: libc, ubnt-meta, netifd, ip
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: ubi-utils
+Version: 2.0.2-1
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-ip6tables
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-reject6, kmod-nf-ipt6, kmod-ipt-core
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: hostapd-openssl
+Version: 2018-12-02-c2c6c01b-6
+Depends: libc, libnl-tiny, hostapd-common, libubus20170705, libopenssl1.1
+Provides: hostapd
+Conflicts: hostapd, hostapd-basic, hostapd-mini
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-qca-nss-drv
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+809a00deff-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-qca-nss-dp
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: odhcp6c
+Version: 2019-01-11-d2e247d8-16
+Depends: libc, libubox20170601, libopenssl1.1
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: fstools
+Version: 2019-03-28-ff1ded63-4
+Depends: libc, ubox, ubi-utils
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-udptunnel4
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: uclient-fetch
+Version: 2019-05-30-3b3e368d-1
+Depends: libc, libuclient20160123
+Provides: wget
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Alternatives: 200:/usr/bin/wget:/bin/uclient-fetch
+
+Package: kmod-udptunnel6
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-ipt-extra
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ipt-core
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: uci
+Version: 2019-05-17-f199b961-3
+Depends: libc, libuci20130104
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: libip4tc0
+Version: 1.8.2-3
+Depends: libc, libxtables12
+Provides: libip4tc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: dropbear
+Version: 2019.78-2
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/dropbear/dropbear_rsa_host_key e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+ /etc/config/dropbear 0198dbc97b5a9aac76a5c6233684571ccdcc91fcb735e91c36d2b06a98158589
+Installed-Time: 1571839969
+Alternatives: 100:/usr/bin/ssh:/usr/sbin/dropbear, 100:/usr/bin/scp:/usr/sbin/dropbear
+
+Package: kmod-hwmon-core
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: qca-qsdk-bin
+Version: acd13548af9ab0f6fb14a5dc3e29b022eddebc8d-1
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: mtd
+Version: 24
+Depends: libc, libubox20170601
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-qca-ssdk-nohnat
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+ce1a36b0f0-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Provides: qca-ssdk
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: ppp
+Version: 2.4.7.git-2019-05-25-2
+Depends: libc, kmod-ppp
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/ppp/chap-secrets 6981fa176a79f8c12be5826c421b16253a616747018ba7e76752a9d36d1d51d4
+ /etc/ppp/filter 579583b318e0cff706ffc134620b42d3fbce8fc31aeb0ad7eea1cc859868e902
+ /etc/ppp/options 01f7358a5528be037dde329a2ecfb7a63382aababf21d4f5bc085f5acef95133
+Installed-Time: 1571839969
+
+Package: kmod-leds-gpio
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-gpio-button-hotplug
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-2
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: logd
+Version: 2019-04-07-5130fa4d-1
+Depends: libc, libubox20170601, libubus20170705, libblobmsg-json
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-ubnt-hal
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-ipq807x-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: librt
+Version: 1.1.22-1
+Depends: libpthread
+Status: install hold installed
+Essential: yes
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libopenssl1.1
+Version: 1.1.1c-1
+Depends: libc
+Provides: libopenssl
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-qca-nss-dp
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4+42d32c8780-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-qca-ssdk-nohnat
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libjson-script
+Version: 2019-02-27-eeef7b50-1
+Depends: libc, libubox20170601
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libblobmsg-json
+Version: 2019-02-27-eeef7b50-1
+Depends: libc, libjson-c2, libubox20170601
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libip6tc0
+Version: 1.8.2-3
+Depends: libc, libxtables12
+Provides: libip6tc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: iptables
+Version: 1.8.2-3
+Depends: libc, kmod-ipt-core, libip4tc0, libip6tc0, libxtables12
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: openwrt-keyring
+Version: 2018-05-18-103a32e9-1
+Depends: libc
+Provides: lede-keyring
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libnl-core200
+Version: 3.4.0-2
+Depends: libc, libpthread
+Provides: libnl-core
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: qca-common-tools
+Version: 3ad72f78e2-1
+Depends: libc, libnl200, libpthread, libxml2, iw, qca-diag
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-nf-nathelper-extra
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-nat, kmod-lib-textsearch, kmod-ipt-raw
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: jshn
+Version: 2019-02-27-eeef7b50-1
+Depends: libc, libjson-c2, libubox20170601, libblobmsg-json
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-ipt-core
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-reject, kmod-nf-ipt
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-ppp
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-lib-crc-ccitt, kmod-slhc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: igmpproxy
+Version: 0.2.1-4
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Conffiles:
+ /etc/config/igmpproxy f4c5a56640269b5b9add9f30e99602bab5bf45290069bc7bf6f6cf50f0b8c91f
+Installed-Time: 1571839969
+
+Package: libjson-c2
+Version: 0.12.1-3
+Depends: libc
+Provides: libjson-c
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: uhttpd
+Version: 2018-11-28-cdfc902a-3
+Depends: libc, libubox20170601, libblobmsg-json, libjson-script
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-nf-conntrack
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: usign
+Version: 2015-07-04-ef641914-1
+Depends: libc, libubox20170601
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: ip6tables
+Version: 1.8.2-3
+Depends: libc, kmod-ip6tables, iptables
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: ubnt-meta
+Version: 1.0.0-1
+Depends: libc, busybox
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: zlib
+Version: 1.2.11-3
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-nf-ipt6
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-ipt
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: libubus20170705
+Version: 2018-10-06-221ce7e7-1
+Depends: libc, libubox20170601
+Provides: libubus
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: qca-wifi-hk-fw_v2
+Version: 054487d849-1
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: qca-wifi-fw-headers
+Version: 708de0a950-1
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-nf-conntrack6
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-nf-conntrack
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: libgcc1
+Version: 7.4.0-1
+Provides: libgcc
+Status: install hold installed
+Essential: yes
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: ubox
+Version: 2019-04-07-5130fa4d-1
+Depends: libc, libubox20170601, ubusd, ubus, libubus20170705, libuci20130104
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kernel
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libnl-tiny
+Version: 0.1-5
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-regmap-i2c
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-regmap-core, kmod-i2c-core
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-regmap-core
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37)
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: qca-wifi-hk-fw
+Version: 0e910524ee-1
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: fwtool
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: jsonfilter
+Version: 2018-02-04-c7e938d6-1
+Depends: libc, libubox20170601, libjson-c2
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: libnl-nf200
+Version: 3.4.0-2
+Depends: libc, libnl-route200
+Provides: libnl-nf
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: hostapd-common
+Version: 2018-12-02-c2c6c01b-6
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: wireless-tools
+Version: 29-6
+Depends: libc
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-ipt-offload
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ipt-core, kmod-nf-flow
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-pppol2tp
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ppp, kmod-pppox, kmod-l2tp
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+
+Package: kmod-slhc
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-lib-crc-ccitt
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: ppp-mod-pppoe
+Version: 2.4.7.git-2019-05-25-2
+Depends: libc, kmod-pppoe
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: kmod-ipt-nat
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (= ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ipt-core, kmod-nf-nat
+Status: install user installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+
+Package: libnl-genl200
+Version: 3.4.0-2
+Depends: libc, libnl-core200
+Provides: libnl-genl
+Status: install ok installed
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Time: 1571839969
+Auto-Installed: yes
+

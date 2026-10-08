@@ -1,0 +1,2 @@
+/etc/modules.d/nf-ipt6
+/lib/modules/6.12.63/ip6_tables.ko

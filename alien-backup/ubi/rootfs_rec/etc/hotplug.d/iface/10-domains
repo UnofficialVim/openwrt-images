@@ -1,0 +1,8 @@
+#!/bin/sh
+
+[ "$ACTION" = "ifup" -o "$ACTION" = "ifupdate" -o "$ACTION" = "ifdown" ] || exit
+[ "$INTERFACE" = "lan" -o "$INTERFACE" = "wan" -o "$INTERFACE" = "wwan" ] || exit
+
+logger "domains hotplug: $ACTION for $INTERFACE"
+
+/lib/functions/update-domains.sh

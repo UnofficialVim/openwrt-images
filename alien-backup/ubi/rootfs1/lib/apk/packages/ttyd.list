@@ -1,0 +1,3 @@
+/etc/config/ttyd
+/etc/init.d/ttyd
+/usr/bin/ttyd

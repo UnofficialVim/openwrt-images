@@ -1,0 +1,13 @@
+Package: ip-full
+Version: 5.0.0-1
+Depends: libc, libnl-tiny, libelf1
+Provides: ip
+Alternatives: 300:/sbin/ip:/usr/libexec/ip-full
+Source: package/network/utils/iproute2
+SourceName: ip-full
+License: GPL-2.0
+Section: net
+Maintainer: Russell Senior <russell@personaltelco.net>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 188218
+Description:  Routing control utility (Full)

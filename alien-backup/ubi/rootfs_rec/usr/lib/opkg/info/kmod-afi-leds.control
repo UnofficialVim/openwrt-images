@@ -1,0 +1,9 @@
+Package: kmod-afi-leds
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-ipq807x-1
+Depends: kernel (=ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ubnt-hal
+Source: package/ubiquiti/afi-leds
+SourceName: kmod-afi-leds
+Section: kernel
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 11768
+Description:  AmpliFi LED control

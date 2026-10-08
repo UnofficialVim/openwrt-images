@@ -1,0 +1,10 @@
+Package: uh-fw-tool
+Version: d6f3253012a06c04a690b31a3b5632038e408b58-1
+Depends: libc, mtd, libopenssl1.1
+Source: package/ubiquiti/uh-fw-tool
+SourceName: uh-fw-tool
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 14280
+Description:  Firmware verify and upgrade tool

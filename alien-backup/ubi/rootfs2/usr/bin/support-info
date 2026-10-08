@@ -1,0 +1,694 @@
+#!/bin/sh
+
+. /lib/functions/afi.sh
+
+for arg in "$@"
+do
+    case $arg in
+        -q|--quiet)
+            ARG_QUIET=1
+            shift
+            ;;
+        -e|--encrypt)
+            ARG_ENCRYPT=1
+            shift
+            ;;
+        -c|--crashdump)
+            ARG_ADD_CRASHDUMP=1
+            shift
+    esac
+done
+
+support_dir=/tmp/support
+
+shortname=$(afi_board_shortname)
+macaddr=$(afi_board_eth0_macaddr | tr -d ':')
+date=$(date '+%Y-%m-%d_%H-%M-%S')
+info_name=${shortname}_${macaddr}_${date}
+
+tmp_dir=$support_dir/$info_name
+
+rm -rf $support_dir
+mkdir -p $tmp_dir
+
+dump_proc_process() {
+    local proc_dir=$tmp_dir/proc_$1
+    mkdir -p $proc_dir
+    pid=$(pidof $1)
+    [ "$?" = "0" ] || return
+    files=$(find /proc/$pid -type f -maxdepth 1 | grep -v '/mem$')
+    files="$files $(find /proc/$pid/fdinfo -type f -maxdepth 1)"
+    files="$files $(find /proc/$pid/task/ -type f -maxdepth 2 | grep -v '/mem$' | grep -v "/maps$")"
+    for f in $files
+    do
+        mkdir -p $proc_dir/$(dirname $f)
+        cat $f > $proc_dir/$f
+    done
+
+    links="$(find /proc/$pid/fd -type l -maxdepth 1)"
+    for l in $links
+    do
+        mkdir -p $proc_dir/$(dirname $l)
+        readlink $l > $proc_dir/$l
+    done
+}
+
+dump_ethernet_driver_info() {
+    local file=$tmp_dir/$1
+    [ -d /sys/kernel/debug/ag71xx/ag71xx.0 ] || return
+
+    echo "Hardware interrupts" > $file
+    cat /sys/kernel/debug/ag71xx/ag71xx.0/int_stats >> $file
+    echo "------------------------------------------------------------" >> $file
+    echo "NAPI interrupts" >> $file
+    cat /sys/kernel/debug/ag71xx/ag71xx.0/napi_stats >> $file
+    echo "------------------------------------------------------------" >> $file
+    echo "Registers" >> $file
+    cat /sys/kernel/debug/ag71xx/ag71xx.0/regs >> $file
+    echo "------------------------------------------------------------" >> $file
+    echo "RX ring" >> $file
+    cat /sys/kernel/debug/ag71xx/ag71xx.0/rx_ring >> $file
+    echo "------------------------------------------------------------" >> $file
+    echo "TX ring" >> $file
+    cat /sys/kernel/debug/ag71xx/ag71xx.0/tx_ring >> $file
+}
+
+dump_dhcplog() {
+    [ -x /usr/sbin/dhcplog ] || return
+
+    killall -USR1 dhcplog 2> /dev/null
+    sleep 3
+    cp /tmp/dhcplog-*.pcap $tmp_dir 2> /dev/null
+    rm -f /tmp/dhcplog-*.pcap
+}
+
+get_support_info () {
+    echo "Collecting support information"
+
+    if [ -f /sys/kernel/debug/kmemleak ]
+    then
+        cp /sys/kernel/debug/kmemleak $tmp_dir
+    fi
+
+    top -n2 -d3 >> $tmp_dir/top.txt
+
+    dump_ethernet_driver_info ethernet_info_1
+    afiubus_dir=$tmp_dir/afiubus
+    mkdir -p $afiubus_dir
+    ubus call ajconfd DiagnosticInfo > $afiubus_dir/diagnostic_info_1
+
+    # Start long-running ping processes in background as early as possible
+    mkdir -p $tmp_dir/proc
+    cp -r -L /proc/net $tmp_dir/proc
+    cp /proc/slabinfo $tmp_dir/slabinfo
+    cp -r -L /sys/kernel/slab/ $tmp_dir/slab
+    ip -6 neigh > $tmp_dir/ip_6_neigh
+    ping_dir=$tmp_dir/ping
+    ping_dir_dns=$tmp_dir/ping-dns
+    rtables_dir=$tmp_dir/rtables
+    rtables4_dir=$rtables_dir/ipv4
+    rtables6_dir=$rtables_dir/ipv6
+    dns_list_file=/tmp/dns_list.txt
+    wait_pids=
+    mkdir -p $ping_dir
+    mkdir -p $ping_dir_dns
+    mkdir -p $rtables4_dir
+    mkdir -p $rtables6_dir
+    egrep -o '\d+\.\d+\.\d+\.\d+' /var/resolv.conf.auto > $dns_list_file
+    echo 1.1.1.1 >> $dns_list_file
+    echo 8.8.8.8 >> $dns_list_file
+    ORIG_IFS=$IFS
+    IFS=$'\n'
+    for line in `cat $tmp_dir/proc/net/arp`
+    do
+        iface=`echo $line | awk -F' ' '{print $6}'`
+        flags=`echo $line | awk -F' ' '{print $3}'`
+        # Skip header and get completed entry
+        if [ "$iface" != "Device" ] && [ "$flags" == "0x2" ]; then
+            ip=`echo $line | awk -F' ' '{print $1}'`
+            ping -c 5 -w 5 $ip > $ping_dir/$ip.log &
+            wait_pids="$wait_pids $!"
+            # Check for ARP conflicts
+            case "$shortname" in
+            AFi-ALN-*|ULTE*)
+                arping -I $iface -b -c 5 $ip > $ping_dir/arping_$ip.log &
+                ;;
+            *)
+                arping -I $iface -b -C -c 5 $ip > $ping_dir/arping_$ip.log &
+                ;;
+            esac
+            wait_pids="$wait_pids $!"
+        fi
+    done
+    for line in `cat /etc/iproute2/rt_tables`
+    do
+        id=`echo $line | awk -F' ' '{print $1}'`
+        name=`echo $line | awk -F' ' '{print $2}'`
+        case $id in '#'*)
+           continue
+        esac
+        ip -4 route show table $id > $rtables4_dir/$name-$id
+        ip -6 route show table $id > $rtables6_dir/$name-$id
+    done
+    for ip in `sort $dns_list_file | uniq`
+    do
+        ping -c 5 -w 5 $ip > $ping_dir_dns/$ip.log &
+        wait_pids="$wait_pids $!"
+    done
+    IFS=$ORIG_IFS
+    rm $dns_list_file
+
+    dump_proc_process ajconfd &
+    wait_pids="$wait_pids $!"
+
+    dump_proc_process bleprotod &
+    wait_pids="$wait_pids $!"
+
+    dump_dhcplog &
+    wait_pids="$wait_pids $!"
+
+    cp /proc/meminfo $tmp_dir
+    cp /proc/modules $tmp_dir
+    uptime > $tmp_dir/uptime
+    ps -ww > $tmp_dir/ps
+    ls -l /tmp > $tmp_dir/tmp_dir_ls
+    netstat -nap > $tmp_dir/netstat_nap
+    route -n > $tmp_dir/route_n
+    ip -6 r > $tmp_dir/ip_6_r
+    case "$shortname" in
+        AFi-ALN-*)
+            ecm_dump.sh > $tmp_dir/ecm_dump
+        ;;
+        ULTE*)
+        ;;
+        *)
+            sfe_dump > $tmp_dir/sfe_dump
+        ;;
+    esac
+    swconfig dev switch0 show > $tmp_dir/swconfig
+    [ -e /proc/switch_uext/switch0/arl ] && \
+        cat /proc/switch_uext/switch0/arl > $tmp_dir/arl_cache
+    core_dir=$tmp_dir/core_dumps
+    mkdir -p $core_dir
+    ln -s /tmp/*.core $core_dir
+    # Request statistics from Tinc daemon, goes into syslog
+    killall -sigusr1 tincd
+    killall -sigusr2 tincd
+    ln -s /tmp/tinc $tmp_dir/tmp_tinc
+
+    mkdir -p $tmp_dir/iptables $tmp_dir/ip6tables
+    for table in "filter" "nat" "mangle" "raw"
+    do
+        iptables -vnxt $table -L > $tmp_dir/iptables/$table
+        ip6tables -vnxt $table -L > $tmp_dir/ip6tables/$table
+    done
+
+    stats_tool -r firmware > $tmp_dir/stats_firmware
+    stats_tool -m firmware > $tmp_dir/stats_firmware_meta
+    stats_tool -r speedtest > $tmp_dir/stats_speedtest_history.bin
+    stats_tool -m speedtest > $tmp_dir/stats_speedtest_meta
+    stats_tool -r perf > $tmp_dir/stats_perf.bin
+    stats_tool -m perf > $tmp_dir/stats_perf_meta
+    stats_tool -r clients > $tmp_dir/stats_clients.bin
+    stats_tool -m clients > $tmp_dir/stats_clients_meta
+    stats_tool -r uictld > $tmp_dir/stats_uictld.bin
+    stats_tool -m uictld > $tmp_dir/stats_uictld_meta
+    stats_tool -r debug > $tmp_dir/stats_debug.bin
+    stats_tool -m debug > $tmp_dir/stats_debug_meta
+
+    case "$shortname" in
+        AFi-ALN-*)
+            [ "$ARG_ADD_CRASHDUMP" = 1 ] &&
+                stats_tool -r wifi-crash-dump > $tmp_dir/stats_wifi_crash_dump.bin
+            stats_tool -m wifi-crash-dump > $tmp_dir/stats_wifi_crash_dump_meta
+            # TrustZone log
+            cat /sys/kernel/debug/qcom_debug_logs/tz_log > $tmp_dir/tz_log
+
+            mkdir -p $tmp_dir/stats_perf_log
+            stats_tool -r perf-log-1-1 > $tmp_dir/stats_perf_log/perf-log-1-1
+            stats_tool -r perf-log-1-2 > $tmp_dir/stats_perf_log/perf-log-1-2
+            stats_tool -r perf-log-15-1 > $tmp_dir/stats_perf_log/perf-log-15-1
+            stats_tool -r perf-log-15-2 > $tmp_dir/stats_perf_log/perf-log-15-2
+            stats_tool -r perf-log-1440-1 > $tmp_dir/stats_perf_log/perf-log-1440-1
+            stats_tool -r perf-log-1440-2 > $tmp_dir/stats_perf_log/perf-log-1440-2
+            ;;
+    esac
+
+    qos_file="$tmp_dir/qos_stats.txt"
+    echo "QoS stats:" > $qos_file
+    echo "" >> $qos_file
+    for iface_full in /sys/class/net/*
+    do
+        iface=`basename $iface_full`
+        echo " =============== Iface $iface: ================" >> $qos_file
+        echo "" >> $qos_file
+        tc -s qdisc show dev $iface >> $qos_file
+        tc -s class show dev $iface >> $qos_file
+        echo "" >> $qos_file
+    done
+
+    dmesg > $tmp_dir/dmesg
+    ip a > $tmp_dir/ip_a
+    ip -6 a > $tmp_dir/ip_6_a
+    ip maddr > $tmp_dir/ip_maddr
+    ip mroute > $tmp_dir/ip_mroute
+    ip -d link > $tmp_dir/ip_link
+    ip -4 rule > $tmp_dir/ip_4_rule
+    ip -6 rule > $tmp_dir/ip_6_rule
+    ip -4 neigh > $tmp_dir/ip_4_neigh
+    ip -6 neigh > $tmp_dir/ip_6_neigh
+    brctl show > $tmp_dir/brctl
+    [ ! -z "$(pgrep mstpd)" ] && {
+        mstpctl showbridge br-lan > $tmp_dir/mstpctl_bridge
+        mstpctl showportdetail br-lan > $tmp_dir/mstpctl_portdetail
+    }
+    wg > $tmp_dir/wg
+
+    dir_wifi="$tmp_dir/wifi"
+    mkdir -p $dir_wifi
+    iwinfo > $dir_wifi/iwinfo
+    iw_station_dump_file="$dir_wifi/iw_station_dump"
+    hostapd_clients_file="$dir_wifi/hostapd_clients"
+    bs_table_file="$dir_wifi/bs_table"
+    bss_status_file="$dir_wifi/bss_status"
+    athstats_file="$dir_wifi/athstats_radio"
+    apstats_radio_file="$dir_wifi/apstats_radio"
+    apstats_wlan_file="$dir_wifi/apstats_wlan"
+    apstats_sta_file="$dir_wifi/apstats_sta"
+    wifistats_file="$dir_wifi/wifistats"
+    wlanconfig_liststa_file="$dir_wifi/wlanconfig_liststa"
+
+    echo "List of connected stations:" > $iw_station_dump_file
+    echo "List of connected stations:" > $hostapd_clients_file
+    echo "Band/Router steering table contents:" > $bs_table_file
+    echo "BSS status:" > $bss_status_file
+    for iface in `iwinfo | awk '/^wlan/ {print $1}'`
+    do
+        echo "Iface $iface:" >> $iw_station_dump_file
+        iw $iface station dump >> $iw_station_dump_file
+        echo "Iface $iface:" >> $hostapd_clients_file
+        ubus call hostapd.$iface get_clients >> $hostapd_clients_file
+        echo "Iface $iface:" >> $bs_table_file
+        hostapd_cli -i $iface bs_table >> $bs_table_file
+        echo "Iface $iface:" >> $bss_status_file
+        ubus call hostapd.$iface bss_status >> $bss_status_file
+    done
+
+    iw reg get > $dir_wifi/reg_domain
+
+    case "$shortname" in
+        AFi-R|AFi-R-*|AFi-P-HD|AFi-P-G|AFi-INS-*)
+            cp /sys/kernel/debug/ieee80211/phy0/ath10k/fw_stats $dir_wifi/ath10k_fw_stats
+            cp /sys/kernel/debug/ieee80211/phy1/ath9k/xmit $dir_wifi/ath9k_xmit
+            cp /sys/kernel/debug/ieee80211/phy1/ath9k/regdump $dir_wifi/ath9k_regdump
+            cp /sys/kernel/debug/ieee80211/phy1/ath9k/interrupt $dir_wifi/ath9k_interrupt
+            for dev in `iwinfo | awk '/^wlan[0-9][[:space:]]/ {print $1}'`
+            do
+                iw dev $dev scan > $dir_wifi/scan_${dev}
+            done
+        ;;
+        AFi-P|AFi-P-LR|AFi-PB|AFi-T)
+            cp /sys/kernel/debug/ieee80211/phy0/ath9k/xmit $dir_wifi/ath9k_xmit
+            cp /sys/kernel/debug/ieee80211/phy0/ath9k/regdump $dir_wifi/ath9k_regdump
+            cp /sys/kernel/debug/ieee80211/phy0/ath9k/interrupt $dir_wifi/ath9k_interrupt
+            iw dev wlan0 scan > $dir_wifi/scan_wlan0
+        ;;
+        AFi-ALN-*)
+            # Radio statistics
+            echo "QCA radio statistic counters (athstats)" > $athstats_file
+            echo "***************************************" >> $athstats_file
+            echo "QCA radio statistic counters (apstats)" > $apstats_radio_file
+            echo "QCA radio HTT counters (wifistats)" > $wifistats_file
+            echo "***************************************" >> $wifistats_file
+            for radio in `iwinfo | awk '/^radio[0-9][[:space:]]/ {print $1}'`
+            do
+                echo "Radio interface: $radio" >> $athstats_file
+                echo "**************************************************" >> $athstats_file
+                athstats -i $radio >> $athstats_file
+                echo "" >> $athstats_file
+
+                echo "**************************************************" >> $apstats_radio_file
+                apstats -r -i $radio >> $apstats_radio_file
+                echo "" >> $apstats_radio_file
+
+                echo "Radio interface: $radio" >> $wifistats_file
+                echo "**************************************************" >> $wifistats_file
+                wifistats $radio 1 >> $wifistats_file
+                wifistats $radio 2 >> $wifistats_file
+                wifistats $radio 5 >> $wifistats_file
+                wifistats $radio 8 >> $wifistats_file
+                wifistats $radio 19 >> $wifistats_file
+                echo "" >> $wifistats_file
+            done
+
+            # VIF and station statistics
+            echo "QCA interface statistic counters (apstats)" > $apstats_wlan_file
+            echo "QCA station statistic counters (apstats)" > $apstats_sta_file
+            echo "wlanconfig station list" > $wlanconfig_liststa_file
+            echo "***********************" >> $wlanconfig_liststa_file
+            for dev in `iwinfo | awk '/^wlan[0-9]/ {print $1}'`
+            do
+                echo "***************************************************" >> $apstats_wlan_file
+                apstats -v -i $dev >> $apstats_wlan_file
+                echo "" >> $apstats_wlan_file
+
+                echo "Virtual interface: $dev" >> $wlanconfig_liststa_file
+                echo "*************************" >> $wlanconfig_liststa_file
+                wlanconfig $dev list sta >> $wlanconfig_liststa_file
+                echo "" >> $wlanconfig_liststa_file
+
+                for sta in `wlanconfig $dev list sta | awk '/^([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}/ {print $1}'`
+                do
+                    echo "*******************************************************" >> $apstats_sta_file
+                    apstats -s -m $sta >> $apstats_sta_file
+                    echo "" >> $apstats_sta_file
+                done
+            done
+
+            # Scan for nearby Access Points and Ad-Hoc cells
+            for dev in `iw dev | awk '/Interface (wlan\d)$/ {print $2}' | sort`
+            do
+                iwlist $dev scanning > $dir_wifi/${dev}_scan &
+            done
+            wait
+
+            # Create acs reports
+            for dev in `iw dev | awk '/Interface (wlan\d)$/ {print $2}' | sort`
+            do
+                cfg80211tool $dev acsreport 1
+            done
+
+            sleep 15 # a few extra seconds added to improve reliability
+
+            # Save acs reports
+            for dev in `iw dev | awk '/Interface (wlan\d)$/ {print $2}' | sort`
+            do
+                wifitool $dev acsreport > $dir_wifi/${dev}_acsreport
+            done
+
+            # Print bs dump to logread
+            cfg80211tool wlan0 get_bs_dump > /dev/null
+            cp /tmp/cnss_firmware.log $dir_wifi/
+        ;;
+        ULTE*)
+            cp /sys/kernel/debug/ieee80211/phy0/ath9k/xmit $dir_wifi/ath9k_xmit
+            cp /sys/kernel/debug/ieee80211/phy0/ath9k/regdump $dir_wifi/ath9k_regdump
+            cp /sys/kernel/debug/ieee80211/phy0/ath9k/interrupt $dir_wifi/ath9k_interrupt
+            # Repeat if fails (usually Resource busy)
+            iw dev wlan0 scan > $dir_wifi/scan_wlan0 || sleep 1 && iw dev wlan0 scan > $dir_wifi/scan_wlan0
+        ;;
+        *)
+            echo "Unknown device name '$shortname'"
+        ;;
+    esac
+
+    if [ "$shortname"="AFi-PB" ]; then
+        ubus call pwrbox info '{"level":1}' > $tmp_dir/pb
+    fi
+
+    ln -s /var/upnp.leases $tmp_dir/upnp.leases
+    ln -s /tmp/ajconfd_watchdog.txt $tmp_dir/ajconfd_watchdog.txt
+    [ -e /tmp/guest_wifi_whitelist.json ] \
+        && ln -s /tmp/guest_wifi_whitelist.json $tmp_dir/guest_wifi_whitelist.json
+    ln -s /tmp/log $tmp_dir/log
+    [ -e /lib/firmware/AFi-R_LCD.bin ] \
+        && dd if=/lib/firmware/AFi-R_LCD.bin bs=16c skip=32 count=1 of=$tmp_dir/display_release \
+        && echo >> $tmp_dir/display_release \
+        && dd if=/lib/firmware/AFi-R_LCD_BL.bin bs=16c skip=32 conv=notrunc seek=17 count=1 of=$tmp_dir/display_release \
+        && echo >> $tmp_dir/display_release
+
+    case "$shortname" in
+        AFi-ALN-*)
+            dd if=/dev/mtd18 of=$tmp_dir/dev_eeprom
+            dd if=/dev/mtd20 of=$tmp_dir/dev_prst
+        ;;
+        ULTE*)
+            dd if=/dev/mtd2 of=$tmp_dir/dev_eeprom
+            dd if=/dev/mtd5 of=$tmp_dir/dev_prst
+        ;;
+        *)
+            dd if=/dev/mtd2 of=$tmp_dir/dev_prst
+            dd if=/dev/mtd3 of=$tmp_dir/dev_eeprom
+        ;;
+    esac
+
+    # Thermal / fan info
+    case "$shortname" in
+        AFi-ALN-*)
+            cp /sys/devices/platform/soc/78b6000.i2c/i2c-0/0-004c/hwmon/hwmon0/*_input $tmp_dir/
+            cat /sys/devices/virtual/thermal/thermal_zone*/temp > $tmp_dir/thermal_zone_temps
+            ;;
+    esac
+
+    curl --connect-timeout 5 --max-time 5 --retry 2 -s -S https://device.amplifi.com &> $tmp_dir/sso_conn_check
+
+    # Check whether ajconfd responds on secure Websocket port 9016. Can help identify ip address conflict with other devices.
+    # Ajconfd may currently think that node is offline, because its two-direction websockets are not connected.
+    # We test new websocket response on last used ip address.
+    for ip in $(ubus call ajconfd.ClusterNode GetClusterNodeTopology | sed -r 's/[[:blank:]]+\"ip\": \"([0-9.]+)\"./\1/;t;d'); do echo "Node $ip:"; curl --connect-timeout 5 -k "https://$ip:9016"; echo; echo; done > $tmp_dir/ajconfd_websocket_check
+
+    ubus call dhcp ipv4leases > $tmp_dir/dhcp_ipv4leases
+    ubus call network.interface dump > $tmp_dir/ubus_network_interface
+    ubus call network.device status > $tmp_dir/ubus_network_device
+    ubus call network.wireless status \
+         | sed 's/\([[:blank:]]\)\(\"key\"\): \"\(.*\)\"/\1\2: \"___PASSWORD_REMOVED___\"/g' \
+         > $tmp_dir/ubus_network_wireless
+
+    for line in $(grep -o "etc/.*" /etc/persist_list | grep -v dropbear | sort | uniq)
+    do
+        [ -e /tmp/persist/$line ] && mkdir -p `dirname $tmp_dir/$line` && cp -ra /tmp/persist/$line $tmp_dir/$line
+    done
+    cp /etc/config/wireless_override $tmp_dir/etc/config/wireless_override
+    cp /etc/openwrt_* $tmp_dir/etc
+
+    w_out=$tmp_dir/etc/config/wireless
+    rm -f $w_out
+    while IFS='' read -r line || [[ -n "$line" ]]; do
+        echo $line | grep 'option key ' &> /dev/null
+        if [ "$?" = "0" ]; then
+            # Reduce hash to avoid brute forcing, but allow compare
+            sum=`echo $line | md5sum | awk '{print substr($0,1,6) "_hashed"}'`
+            echo option key $sum >> $w_out
+        else
+            echo $line >> $w_out
+        fi
+    done < "/etc/config/wireless"
+
+    w_out=$tmp_dir/etc/config/ajconfd
+    rm -f $w_out
+    while IFS='' read -r line || [[ -n "$line" ]]; do
+        echo $line | grep 'option webrtc_auth_key ' &> /dev/null
+        if [ "$?" = "0" ]; then
+            # Reduce hash to avoid brute forcing, but allow compare
+            sum=`echo $line | md5sum | awk '{print substr($0,1,6) "_hashed"}'`
+            echo option webrtc_auth_key $sum >> $w_out
+        else
+            echo $line >> $w_out
+        fi
+    done < "/etc/config/ajconfd"
+
+    sed -i 's/option[[:blank:]]\(password\)\(.*\)/option \1 "___PASSWORD_REMOVED___"/g' $tmp_dir/etc/config/network
+    # Don't remove salt, it helps to see if passwords are the same or not
+    sed -i 's/option[[:blank:]]\(password\|verifier\|private_key\|wan_password\)\(.*\)/option \1 "___REMOVED___"/g' $tmp_dir/etc/config/ajconfd
+
+    mkdir $tmp_dir/tmp_run
+    ln -s /tmp/run/* $tmp_dir/tmp_run
+    list=`ls -1 /tmp/run|grep "hostapd-phy.*\.conf"`
+    for f in $list
+    do
+        rm $tmp_dir/tmp_run/$f
+        cat /tmp/run/$f \
+            | sed  's/wpa_passphrase.*/#wpa_passphrase removed/g' \
+            | sed  's/wpa_psk.*/#wpa_psk removed/g' \
+            > $tmp_dir/tmp_run/$f
+    done
+
+    ubus call ajconfd.ClusterNode GetClientInfo > $afiubus_dir/client_info
+    ubus call ajconfd.ClusterNode GetHistoricClientInfo > $afiubus_dir/historic_client_info
+    ubus call ajconfd.ClusterNode GetClientStats > $afiubus_dir/client_stats
+    ubus call ajconfd.ClusterNode GetPeerList > $afiubus_dir/peer_list
+    ubus call ajconfd.ClusterNode GetClusterNodeTopology '{"args": {"arl_table": true}}' > $afiubus_dir/cluster_node_topology
+    ubus call ajconfd.ClusterNode GetWifiClientInfo > $afiubus_dir/cluster_wifi_client_info
+    ubus call ajconfd.ClusterNode GetWifiConfig \
+      | sed 's/\([[:blank:]]\)\(\".*Password\"\): \"\(.*\)\"/\1\2: \"___PASSWORD_REMOVED___\"/g' \
+      > $afiubus_dir/cluster_wifi_config
+    ubus call ajconfd.ClusterNode GetProperty '{"name": "MasterPeer"}' > $afiubus_dir/master_peer
+    ubus call ajconfd.ClusterNode GetNetworkConfig \
+      | sed 's/\([[:blank:]]\)\(\"Wan password\"\): \"\(.*\)\"/\1\2: \"___PASSWORD_REMOVED___\"/g' \
+      > $afiubus_dir/cluster_network_config
+    ubus call ajconfd.ClusterNode GetSiteConfig > $afiubus_dir/cluster_site_config
+    ubus call ajconfd.ClusterNode GetUsersConfig \
+      | sed 's/\([[:blank:]]\)\(\"\(Password\|PrivateKey\|Verifier\|UnixShadowPassword\)\"\): \"\(.*\)\"/\1\2: \"___REMOVED___\"/g' \
+      > $afiubus_dir/cluster_users_config
+    ubus call ajconfd GetClusterEthernetClients > $afiubus_dir/cluster_ethernet_clients
+    ubus call ajconfd DiagnosticInfo > $afiubus_dir/diagnostic_info_2
+    ubus call ajconfd.Device GetWifiRadios > $afiubus_dir/wifi_radios
+    ubus call ajconfd.Device GetWifiInterfaces \
+      | sed 's/\([[:blank:]]\)\(\"Password\"\): \"\(.*\)\"/\1\2: \"___PASSWORD_REMOVED___\"/g' \
+      > $afiubus_dir/wifi_interfaces
+    ubus call ajconfd.Device GetNetworkInterfaces \
+      | sed 's/\([[:blank:]]\)\(\"Password\"\): \"\(.*\)\"/\1\2: \"___PASSWORD_REMOVED___\"/g' \
+      > $afiubus_dir/network_interfaces
+    ubus call ajconfd.Device GetMacAddresses > $afiubus_dir/mac_addresses
+    ubus call ajconfd.Device GetWifiProtoClients > $afiubus_dir/wifi_proto_clients
+    ubus call ajconfd.Device GetQosConfig > $afiubus_dir/qos_config
+    ubus call ajconfd.Device GetWifiChannelsInfo > $afiubus_dir/wifi_channels_info
+    ubus call ajconfd.Device GetRadarInfo > $afiubus_dir/radar_info
+    ubus call ajconfd.MagicLink RtGetClients > $afiubus_dir/ml_client_list
+    ubus call ajconfd GetUictldClients 2>/dev/null > $afiubus_dir/uictld_client_list
+    ubus call ajconfd.ClusterNode GetFingerprint 2>/dev/null > $afiubus_dir/fingerprint
+    ubus call ajconfd GetAnalytics 2>/dev/null > $afiubus_dir/analytics
+    ubus call ajconfd.Device GetSlaveList '{"detail_level": 3}' 2>/dev/null > $afiubus_dir/slave_list
+
+    ubus call uictld get-diagnostics 2>/dev/null > $tmp_dir/uictld_diagnostics
+    ubus call inetcheck check 2>/dev/null > $tmp_dir/inetcheck
+
+    logread > $tmp_dir/logread
+    cp /sys/kernel/debug/crashlog $tmp_dir/ 2>/dev/null
+    cp /var/resolv.conf.auto $tmp_dir/resolv.conf.auto 2>/dev/null
+    dump_ethernet_driver_info ethernet_info_2
+
+    # DFS info
+    dfs_dir=$tmp_dir/dfs
+    mkdir -p $dfs_dir
+    get_radartool_output() {
+        local radio=${1}
+        local cmd=${2}
+        local dfs_print_func=${3}
+        local file_name=${5}_${radio}
+        local output_file="${4}/${file_name}"
+        local header=${6}
+
+        echo "${header}" > ${output_file}
+        dmesg > /tmp/dmesg1.log && \
+        radartool -i ${radio} ${cmd} && \
+        dmesg > /tmp/dmesg2.log && \
+        diff /tmp/dmesg1.log /tmp/dmesg2.log | \
+        grep "^+" | \
+        grep " ${dfs_print_func}" | \
+        awk -F" ${dfs_print_func}:" '{print $2}' | \
+        awk -F'^ [0-9]*:' '{print $2}' >> ${output_file}
+        rm -f /tmp/dmesg1.log /tmp/dmesg2.log
+    }
+
+    case "$shortname" in
+        AFi-ALN-*)
+            for radio in `iwinfo | awk '/^radio[0-9][[:space:]]/ {print $1}'`
+                do
+                    # skip 2.4 radio
+                    [ "${radio}" = "radio1" ] && continue
+                    ## Displays the channels in the NOL list TODO: shownol - need to be fixed
+                    # get_radartool_output ${radio} shownol dfs_print_nol $dfs_dir "shownol" ""
+                    # Display Precac-required, precac-done and precac-nol lists
+                    get_radartool_output ${radio} showPreCACLists dfs_print_node_data $dfs_dir "precaclist" "NOTE: Syntax for each node: <ch_ieee>(<CAC>,<NOL>)"
+                    # Prints statistics on the number of RADAR pulses detected
+                    echo "${radio}:" >> $dfs_dir/numdetects
+                    radartool -i ${radio} numdetects >> $dfs_dir/numdetects
+                    cfg80211tool ${radio} g_blockdfslist >> $dfs_dir/blockdfslist
+                done
+            ;;
+    esac
+
+    dump_lte () {
+        lte_command="qmicli -pd /dev/cdc-wdm0"
+
+        ${lte_command} --dms-get-ids
+        ${lte_command} --dms-get-capabilities
+        ${lte_command} --dms-get-manufacturer
+        ${lte_command} --dms-get-model
+        ${lte_command} --dms-get-revision
+        ${lte_command} --dms-get-operating-mode
+        ${lte_command} --dms-get-firmware-preference
+        ${lte_command} --dms-swi-get-current-firmware
+
+        ${lte_command} --nas-get-signal-strength
+        ${lte_command} --nas-get-signal-info
+        ${lte_command} --nas-get-home-network
+        ${lte_command} --nas-get-serving-system
+        ${lte_command} --nas-get-system-info
+        ${lte_command} --nas-get-rf-band-info
+        ${lte_command} --nas-swi-get-status
+
+        ${lte_command} --wds-get-current-settings
+
+        ${lte_command} --uim-get-card-status
+        ${lte_command} --uim-get-slot-status
+    }
+
+    case "$shortname" in
+        ULTE*)
+            dump_lte > $tmp_dir/LTE.txt
+        ;;
+    esac
+
+    if [ -x /usr/sbin/hap-wifirouter ]
+    then
+        local homekit_file=$tmp_dir/homekit.txt
+        echo "*** get_status:" >$homekit_file
+        ubus call ajconfd.Device HomeKit '{"args":{ "action": "get_status"}}' >>$homekit_file
+        if [ -d /tmp/hap-wifirouter ]
+        then
+            echo "*** get_network_client_profiles:" >>$homekit_file
+            ubus call hap.wifirouter get_network_client_profiles >>$homekit_file
+            for hk_client_id in `
+                ubus call hap.wifirouter get_network_client_profiles | grep '"client_identifier":' | egrep -o '\d+'
+            `
+            do
+                echo "*** get_network_access_violations for client $hk_client_id:" >>$homekit_file
+                ubus call hap.wifirouter get_network_access_violations "{\"client_identifier\": $hk_client_id}" >>$homekit_file
+            done
+        fi
+    fi
+
+    wait $wait_pids
+
+    ln -s /tmp/etc $tmp_dir/tmp_etc
+    cp -r /proc/ubnthal $tmp_dir/ubnthal
+    echo "Collecting finished"
+}
+
+enc_cleanup () {
+    rm -f ${support_dir}/*.enc
+    rm -f ${support_dir}/hmac
+    rm -f ${tmp_dir}.tar.gz
+    exit $1
+}
+
+get_support_info &> $tmp_dir/support-info
+
+# Create archive and clean up
+tar -C $support_dir -ch ${info_name} 2>${support_dir}/tar.log | gzip > ${tmp_dir}.tar.gz
+cat ${support_dir}/tar.log | grep -v 'ignored' | grep -v 'No such' | grep -v 'from previous'
+
+if [ ! -f ${tmp_dir}.tar.gz ]; then
+    echo "Error creating support info file"
+    exit 1
+fi
+
+rm -rf $tmp_dir
+rm -f ${support_dir}/tar.log
+# -e option is used by ajconfd, don't change it!
+if [ "$ARG_QUIET" = 1 ]; then
+    echo "${tmp_dir}.tar.gz"
+elif [ "$ARG_ENCRYPT" = 1 ]; then
+    # Generate random 32 byte long symmetric key represented in base64
+    key=`openssl rand -base64 32 2>/dev/null` || enc_cleanup 1
+
+    # Encrypt symmetric key using RSA public key with PKCS#1 v1.5 padding
+    echo $key | openssl rsautl -pkcs -encrypt -inkey /etc/support-info-pub.key -pubin > ${support_dir}/key.enc || enc_cleanup 1
+
+    # Encrypt the data using the symmetric key
+    openssl enc -aes-256-cbc -md md5 -in ${tmp_dir}.tar.gz -out ${support_dir}/content.enc -e -pass pass:$key || enc_cleanup 1
+
+    # Calculate HMAC of the encrypted data using the symmetric key
+    openssl dgst -sha256 -binary -hmac $key -out ${support_dir}/hmac ${support_dir}/content.enc || enc_cleanup 1
+
+    # Put everything into one file for convenience
+    tar -C $support_dir -c -f ${tmp_dir}-enc.tar key.enc hmac content.enc || enc_cleanup 1
+
+    echo "${tmp_dir}-enc.tar"
+    enc_cleanup 0
+else
+    echo "Support info file created at ${tmp_dir}.tar.gz"
+fi
+exit 0

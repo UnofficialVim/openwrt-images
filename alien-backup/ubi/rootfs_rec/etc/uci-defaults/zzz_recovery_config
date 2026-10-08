@@ -1,0 +1,84 @@
+#!/bin/sh
+#
+
+. /lib/functions/uci-defaults.sh
+. /lib/functions/afi.sh
+
+hostname=`uci get system.@system[0].hostname`
+
+uci set network.lan.ipaddr='192.168.1.20'
+
+shortname=$(afi_board_shortname)
+case "$shortname" in
+	AFi-ALN-R |\
+	AFi-ALN-P)
+		radio_id_min=0
+		radio_id_max=2
+		;;
+	*)
+		radio_id_min=0
+		radio_id_max=0
+		;;
+esac
+
+while true; do
+	grep -q radio$radio_id_max /etc/config/wireless && break
+	sleep 1
+done
+
+for i in `seq $radio_id_min $radio_id_max`
+do
+	uci batch <<EOF
+	set wireless.radio$i.country='YY'
+	set wireless.radio$i.disabled='0'
+
+	add wireless wifi-iface
+	set wireless.@wifi-iface[$i].device='radio$i'
+	set wireless.@wifi-iface[$i].mode='ap'
+	set wireless.@wifi-iface[$i].network='lan'
+	set wireless.@wifi-iface[$i].ssid='$hostname Recovery'
+	set wireless.@wifi-iface[$i].wds='1'
+EOF
+done
+
+
+# For Mesh Points, Ethernet is disabled by default, enable
+shortname=$(afi_board_shortname)
+case "$shortname" in
+    AFi-P-G |\
+	AFi-P-HD)
+		uci set network.@switch_vlan[0].ports='1 2 3 4 5 0t'
+		uci set network.lan.ifname='eth0.1'
+		;;
+	AFi-P |\
+	AFi-PB)
+		uci set network.lan.ifname='eth0'
+	;;
+	AFi-T)
+		uci set network.wan.ifname=' '
+		uci set network.lan.ifname='eth0'
+		;;
+	AFi-ALN-R)
+		uci set network.lan.ifname='eth0 eth1 eth2 eth3'
+		;;
+	AFi-ALN-P)
+		uci set network.lan.ifname='eth0'
+		;;
+	*)
+		;;
+esac
+
+uci batch <<EOF
+set dhcp.lan.ignore='1'
+set dhcp.lan.dhcpv4='server'
+set dhcp.odhcpd.maindhcp='1'
+
+add dhcp domain
+set dhcp.@domain[-1].ip='192.168.1.20'
+set dhcp.@domain[-1].name='amplifi.lan'
+EOF
+
+uci commit
+wifi
+
+exit 0

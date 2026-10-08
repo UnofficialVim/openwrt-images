@@ -1,0 +1,14 @@
+Package: hostapd-openssl
+Version: 2018-12-02-c2c6c01b-6
+Depends: libc, libnl-tiny, hostapd-common, libubus20170705, libopenssl1.1
+Conflicts: hostapd, hostapd-basic, hostapd-mini
+Provides: hostapd
+Source: package/network/services/hostapd
+SourceName: hostapd-openssl
+License: BSD-3-Clause
+Section: net
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 317779
+Description:  This package contains a full featured IEEE 802.1x/WPA/EAP/RADIUS
+ Authenticator.

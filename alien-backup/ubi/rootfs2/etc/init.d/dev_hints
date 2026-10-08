@@ -1,0 +1,56 @@
+#!/bin/sh /etc/rc.common
+
+USE_PROCD=1
+
+START=95
+STOP=01
+
+DEVICEHINTS_ENABLED=false
+
+CONFIGDEVICES=device_hints
+CONFIGWIFI=wireless
+CFGTOOL=/usr/sbin/cfg80211tool
+ADDCMD='add_dev_hints'
+FLUSHCMD='flush_dev_hints'
+
+set_mac_flags() {
+    local macaddres="$1"
+    local radio="$2"
+    local flags
+
+    config_get flags "$macaddres" "flags"
+    eval "${CFGTOOL} ${radio} ${ADDCMD} ${macaddres} ${flags} 2>/dev/null"
+}
+
+do_apply_device_hints_by_radio() {
+    local radio="$1"
+    # check that the command is implemented
+    ${CFGTOOL} ${radio} | grep -q  ${FLUSHCMD} || { echo "${CFGTOOL}: cmd:${FLUSHCMD} not implemented for ${radio}"; return 0; }
+    eval "${CFGTOOL} ${radio} ${FLUSHCMD} ${macaddres} ${flags} 2>/dev/null"
+
+    # Reading device specific config
+    config_load "${CONFIGDEVICES}"
+    config_foreach set_mac_flags device ${radio}
+}
+
+do_service() {
+    # Reading wireless config
+    config_load "${CONFIGWIFI}"
+    config_foreach do_apply_device_hints_by_radio wifi-device
+}
+
+start_service() {
+    if ${DEVICEHINTS_ENABLED} ; then
+        do_service
+    fi
+}
+
+reload_service() {
+    stop
+    start
+}
+
+service_triggers()
+{
+    procd_add_reload_trigger "${CONFIGDEVICES}"
+}

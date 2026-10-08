@@ -1,0 +1,11 @@
+Package: libnl-genl200
+Version: 3.4.0-2
+Depends: libc, libnl-core200
+Provides: libnl-genl
+Source: package/libs/libnl
+SourceName: libnl-genl
+License: LGPL-2.1
+Section: libs
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 7173
+Description:  Generic Netlink Library Functions

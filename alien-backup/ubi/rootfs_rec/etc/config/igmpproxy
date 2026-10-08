@@ -1,0 +1,18 @@
+# Version here must match default config version in ../uci-defaults/99-igmpproxy
+# Change both every time when this file is updated
+
+config igmpproxy main
+	option quickleave 1
+	option version "2018-11-30-001"
+#	option verbose [0-3](none, minimal[default], more, maximum)
+
+config phyint
+	option network wan
+	option zone wan
+	option direction upstream
+	list altnet 0.0.0.0/0
+
+config phyint
+	option network lan
+	option zone lan
+	option direction downstream

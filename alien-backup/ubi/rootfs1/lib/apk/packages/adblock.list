@@ -1,0 +1,10 @@
+/etc/adblock/adblock.allowlist
+/etc/adblock/adblock.blocklist
+/etc/adblock/adblock.categories
+/etc/adblock/adblock.custom.feeds
+/etc/adblock/adblock.feeds
+/etc/adblock/adblock.mail
+/etc/config/adblock
+/etc/init.d/adblock
+/etc/uci-defaults/95-adblock-housekeeping
+/usr/bin/adblock.sh

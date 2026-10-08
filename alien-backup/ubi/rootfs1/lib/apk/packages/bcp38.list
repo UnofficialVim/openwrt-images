@@ -1,0 +1,4 @@
+/etc/config/bcp38
+/etc/init.d/bcp38
+/etc/uci-defaults/bcp38
+/usr/lib/bcp38/run.sh

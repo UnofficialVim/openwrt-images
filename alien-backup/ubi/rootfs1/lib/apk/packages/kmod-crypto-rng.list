@@ -1,0 +1,3 @@
+/etc/modules.d/09-crypto-rng
+/lib/modules/6.12.63/drbg.ko
+/lib/modules/6.12.63/jitterentropy_rng.ko

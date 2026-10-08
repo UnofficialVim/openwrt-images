@@ -1,0 +1,238 @@
+#!/bin/sh
+
+. html-start
+. head-start
+
+if [ "$(get_setup_done)" = "1" ]; then
+	echo "<meta http-equiv=\"refresh\" content=\"0;URL='download.php'\" />"
+	. head-stop
+	. html-stop
+	exit
+fi
+
+if [ "$REQUEST_METHOD" = "POST" ]; then
+	read QUERY_STRING
+	echo "$QUERY_STRING" > $SETUPFILE
+
+	inv=$(validate_initial "$QUERY_STRING")
+	if [ "$inv" != "0" ]; then
+		echo "<meta http-equiv=\"refresh\" content=\"0;URL='setup.php?invalid=$inv'\" />"
+		. head-stop
+		. html-stop
+		exit
+	fi
+	inetcheck_and_redirect
+
+	. head-stop
+	. html-stop
+	exit
+fi
+
+if [ "$REQUEST_METHOD" = "GET" ]; then
+	inetcheck=$(getvar "$QUERY_STRING" "ic")
+	if [ "$inetcheck" = "0" ]; then
+		echo "<meta http-equiv=\"refresh\" content=\"0;URL='connect.php'\" />"
+		. head-stop
+		. html-stop
+		exit
+	fi
+
+	retry=$(getvar "$QUERY_STRING" "retry")
+	if [ "$retry" = "1" ]; then
+		inetcheck_and_redirect
+		. head-stop
+		. html-stop
+		exit
+	fi
+fi
+
+invalid=$(getvar "$QUERY_STRING" "invalid")
+
+cat head.html
+. head-stop
+
+echo "<body>"
+
+. body-nav
+
+echo "\
+
+	<div class='app-section-title'>
+		<div class='container'>
+			<div class='row'>
+				<div class='col-md-16 callout'>
+					<h1>$PNAME™ Wi-Fi Setup Wizard</h1>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class='container'>
+		<div class='row'>
+			<div class='col-app-container col-xs-12'>
+				<div class='base-modal' style='padding-bottom:0'>
+				"
+				get_modal_header "$ptype"
+				echo "\
+						<div class='item-image'></div>
+						<div class='app-t'>
+							<div class='app-tr'>
+								<div class='app-tc'>
+									<div class='item-title'>$PNAME</div>
+									<div class='item-id'>$AFIID</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class='base-modal-content'>
+
+						<!-- FORM STARTS -->
+						<div class='form-wrap'>
+							<form action='setup.php' method='POST'>
+								<input type='hidden' name='token' value='$TOKEN'>
+								<div class='group'>
+"
+if [ "$invalid" = "ssid" ]; then
+echo "\
+									<input id='red' type='text' name='ssid' required>
+"
+else
+echo "\
+									<input type='text' name='ssid' required>
+"
+fi
+echo "\
+									<span class='highlight'></span>
+									<span class='bar'></span>
+									<label class='has-icon'><img src='img/wi-fi-icon.svg' class='icon' alt=''>Name Your Wireless Network</label>
+"
+if [ "$invalid" = "ssid" ]; then
+echo "\
+								<div class='error-text'>SSID must be at least 1 and at most 32 characters long</div>
+"
+fi
+echo "\
+								</div>
+								<div class='group'>
+"
+if [ "$invalid" = "wifipassword" ]; then
+echo "\
+									<input id='red' type='password' name='wifipassword' required>
+"
+else
+echo "\
+									<input type='password' name='wifipassword' required>
+"
+fi
+echo "\
+									<span class='highlight'></span>
+									<span class='bar'></span>
+									<label class='has-icon'><img src='img/key-icon.svg' class='icon' alt=''>Create Your Wireless Password</label>
+"
+if [ "$invalid" = "wifipassword" ]; then
+echo "\
+								<div class='error-text'>Password must contain at least 8 characters</div>
+"
+fi
+echo "\
+								</div>
+								<div class='group group-variation-02'>
+
+"
+if [ "$invalid" = "admpassword" ]; then
+echo "\
+								<div class='checkbox-item'>
+									<input type='hidden' id='samepass' name='samepass' value='0'>
+									<input class='checkbox-input' id='admcheck' type='checkbox'>
+									<div class='checkbox-check'></div>
+									<div class='checkbox-label'>Use the same password for administration</div>
+								</div>
+"
+else
+echo "\
+								<div class='checkbox-item'>
+									<input type='hidden' id='samepass' name='samepass' value='1'>
+									<input class='checkbox-input' id='admcheck' type='checkbox' checked>
+									<div class='checkbox-check'></div>
+									<div class='checkbox-label'>Use the same password for administration</div>
+								</div>
+"
+fi
+echo "\
+									<br>
+								</div>
+								<div id='admpass' style='display:none;' class='group group-variation-04'>
+"
+if [ "$invalid" = "admpassword" ]; then
+echo "\
+									<input id='red' type='password' name='admpassword'>
+"
+else
+echo "\
+									<input type='password' name='admpassword'>
+"
+fi
+echo "\
+									<span class='highlight'></span>
+									<span class='bar'></span>
+									<label class='has-icon'><img src='img/key-icon.png' class='icon' alt=''>Create Your Administrative Password</label>
+"
+if [ "$invalid" = "admpassword" ]; then
+echo "\
+								<div class='error-text'>Password must contain at least 1 character</div>
+"
+fi
+echo "\
+								</div>
+								<input type='hidden' id='tz' name='timezone' value=''>
+								<div class='group group-variation-03'>
+									<input class='cta-main' type='submit' value='Save & Continue'>
+								</div>
+							</form>
+						<!-- FORM ENDS -->
+						</div>
+
+					</div>"
+if [ "$(prst_tool -r pairing 2> /dev/null | grep -iq "}"; echo "$?")" = "1" ]; then
+	echo "
+					<div id='sep_conn_ipv6' style='height: 1px;border-bottom: 1px solid #eee; margin-top: 15px;margin-left: -40px;margin-right: -40px;'></div>
+					<div style='text-align: center;padding-top: 13px;padding-bottom: 13px;background-color: #FAFAFA; border-top: 1px solid #F8F8F8;'>
+						<a href='setup.php?mode=2' style='color:#BBB'>Or set up as a standalone mesh point</a>
+					</div>"
+else
+	echo "
+					<div style='margin-bottm:30px'>&nbsp;</div>
+	"
+fi
+echo "
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src='js/jstz.min.js'></script>
+	<script>
+		document.getElementById(\"tz\").value = jstz.determine().name();
+
+	var samepass = document.getElementById('samepass');
+		var checkbox = document.getElementById('admcheck');
+		var input = document.getElementById('admpass');
+		checkbox.addEventListener('click', function () {
+			if (input.style.display != 'block') {
+				input.style.display = 'block';
+				samepass.value = '0';
+			} else {
+				input.style.display = 'none';
+				samepass.value = '1';
+			}
+		});
+		if (samepass.value == 1) {
+			input.style.display = 'none';
+		}else{
+			input.style.display = 'block';
+		}
+	</script>
+"
+
+echo "</body>"
+
+. html-stop

@@ -1,0 +1,10 @@
+Package: authscript
+Version: 5ea9a246cc-1
+Depends: libc, mtd, libopenssl1.1, libuhsys
+Source: package/ubiquiti/authscript
+SourceName: authscript
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 2745
+Description:  Authorized script launch tool

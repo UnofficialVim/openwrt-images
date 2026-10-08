@@ -1,0 +1,11 @@
+Package: hostapd-common
+Version: 2018-12-02-c2c6c01b-6
+Depends: libc
+Source: package/network/services/hostapd
+SourceName: hostapd-common
+License: BSD-3-Clause
+Section: net
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 8421
+Description:  hostapd/wpa_supplicant common support files

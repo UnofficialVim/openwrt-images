@@ -1,0 +1,9 @@
+Package: qca-diag
+Version: 9aea0d89ac-1
+Depends: libc, libpthread
+Source: package/qca/qca-diag
+SourceName: qca-diag
+Section: QCA
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 51078
+Description:  QCA Linux diag software

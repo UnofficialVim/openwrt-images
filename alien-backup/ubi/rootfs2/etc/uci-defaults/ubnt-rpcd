@@ -1,0 +1,75 @@
+#!/bin/sh
+
+if [ "$(uci get rpcd.@login[0].password)" != "$p$ubnt" ]; then
+	uci set rpcd.@login[0].password='$p$ubnt'
+fi
+if [ "$(uci get rpcd.@login[0].username)" != "ubnt" ]; then
+	uci set rpcd.@login[0].username='ubnt'
+fi
+uci commit rpcd
+
+uci -q show rpcd.inetcheck &> /dev/null || (
+uci batch <<EOF
+add rpcd plugin
+rename rpcd.@plugin[-1]='inetcheck'
+commit rpcd
+EOF
+)
+
+. /lib/functions/board.sh
+. /lib/functions/afi.sh
+
+uci -q get rpcd.inetcheck.dev_addr &> /dev/null || (
+dev_link='switch0/1'
+dev_addr='eth0.2'
+case $(board_name) in
+	afi-p*)
+		dev_link='br-lan'
+		dev_addr='br-lan'
+	;;
+	*)
+	;;
+esac
+
+shortname=$(afi_board_shortname)
+case "$shortname" in
+	AFi-INS-P |\
+	AFi-INS-R*)
+		dev_link='switch0/2'
+	;;
+	AFi-ALN)
+		dev_link='eth4'
+		dev_addr='eth4'
+	;;
+	*)
+	;;
+esac
+
+uci batch <<EOF
+set rpcd.inetcheck.dev_link='${dev_link}'
+set rpcd.inetcheck.dev_addr='${dev_addr}'
+commit rpcd
+EOF
+)
+
+#
+# UFH-1022 workaround begin
+# Fix broken configuration on the next upgrade
+# Remove this code when all routers are running v2.2.1 or later
+#
+WAN_DEV=$(uci get network.wan.ifname)
+RPCD_DEV=$(uci get rpcd.inetcheck.dev_addr)
+
+if [ "${WAN_DEV}" -a "${WAN_DEV#eth0.}" != "${WAN_DEV}" -a "${WAN_DEV}" != "${RPCD_DEV}" -a "${RPCD_DEV}" = "eth0.2"  ]
+then
+	echo "Inetcheck configuration is broken. Fixing it..." > /dev/kmsg
+	uci batch <<EOF
+set rpcd.inetcheck.dev_addr='${WAN_DEV}'
+commit rpcd
+EOF
+fi
+#
+# UFH-1022 workaround end
+#
+
+exit 0

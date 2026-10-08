@@ -1,0 +1,15 @@
+#!/bin/sh /etc/rc.common
+
+START=76
+
+USE_PROCD=1
+NAME=bluetooth
+PROG=/usr/sbin/bluetoothd
+
+start_service() {
+	procd_open_instance
+	procd_set_param command $PROG -dnE -p skip_all_plugins
+	# Allow unlimited restarts with 5 seconds interval
+	procd_set_param respawn 3600 5 0
+	procd_close_instance
+}

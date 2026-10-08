@@ -1,0 +1,6 @@
+/etc/config/nlbwmon
+/etc/hotplug.d/iface/30-nlbwmon
+/etc/init.d/nlbwmon
+/usr/sbin/nlbw
+/usr/sbin/nlbwmon
+/usr/share/nlbwmon/protocols

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+USCRIPT=arp
+
+case "$1" in
+list)
+	echo '{ "hosts": {} }'
+;;
+
+call)
+	case "$2" in
+	hosts)
+		# read the arguments
+		read input;
+		# optionally log the call
+		#logger -t "$USCRIPT" "$1" "$2" "$input"
+		# return json object or an array
+		i=0
+		echo '{ "hosts":['
+		cat /proc/net/arp | \
+		grep -v IP | \
+		while read -r line; do
+			if [ "$i" == "1" ]; then
+				echo -n ","
+			else
+				i=1
+			fi
+			echo "$line" | \
+			awk -F' ' '{ print "{\"ip\":\""$1"\",\"mac\":\""$4"\",\"iface\":\""$6"\"}" }'
+		done
+		echo "] }"
+	;;
+	esac
+;;
+esac

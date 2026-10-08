@@ -1,0 +1,104 @@
+#!/bin/sh
+
+STOP_PROCESS_LIST="bleproto dispatcher ajconf uictld perfd"
+STOP_PROCESS_TIMEOUT=3000
+
+process_name() {
+	local full_name=$(awk -F"=" "/^PROG=/{print \$2}" /etc/init.d/$1)
+	echo $(basename $full_name)
+}
+
+graceful_restart() {
+	echo "<6> Starting graceful restart" > /dev/kmsg
+
+	for i in $STOP_PROCESS_LIST; do
+		[ ! -e /etc/init.d/$i ] && continue
+		pname=$(process_name $i)
+		pids=$(pgrep $pname)
+		[ -z $pids ] && continue
+		echo "<6> Stopping $pname ($pids)" > /dev/kmsg
+		/etc/init.d/$i stop
+
+		to=$STOP_PROCESS_TIMEOUT
+
+		for t in $(seq 0 100 $STOP_PROCESS_TIMEOUT); do
+			pids=$(pgrep $pname)
+			[ -z $pids ] && \
+				echo "<6> $pname stopped in ${t}ms" > /dev/kmsg && \
+				break
+			usleep 100000
+		done
+
+		[ $t == $STOP_PROCESS_TIMEOUT ] && \
+			echo "<6> $pname ($pids) could not be stopped in ${t}ms" > /dev/kmsg
+	done
+
+	# For testing: do not reboot if .core files are present
+	[ -e /tmp/afiupgrade_core_check ] && ls /tmp/*.core &>/dev/null && {
+		echo locate > /proc/afi_leds/mode
+			exit 1
+		}
+
+	# Do not care about processes at this point, they had
+	# $STOP_PROCESS_TIMEOUT ms to exit
+	sync; reboot -f
+}
+
+export TEST=0
+export HELP=0
+
+# Parse options
+while [ -n "$1" ]; do
+	case "$1" in
+		-n) ;;
+		-T|--test) export TEST=1;;
+		-h|--help) export HELP=1; break;;
+		-*)
+			echo "Invalid option: $1"
+			exit 1
+		;;
+		*) break;;
+	esac
+	shift;
+done
+
+IMAGE="$1"
+
+[ -z "$IMAGE" -o $HELP -gt 0 ] && {
+		cat <<EOF
+Usage: $0 [<upgrade-option>...] <image file>
+
+upgrade-option:
+	-T | --test	Verify image but do not actually flash.
+	-h | --help	display this help
+
+EOF
+	exit 1
+}
+
+[ $TEST -gt 0 ] && {
+	uh-fw-tool -c $IMAGE
+	exit $?
+}
+
+[ -e /etc/init.d/uictld ] && ubus call uictld upgrade && sleep 1
+echo upgrade > /proc/afi_leds/mode
+
+# Use sysupgrade for 1st gen 16MB prototype samples
+grep -q flashSize=16777216 /proc/ubnthal/system.info && {
+	sysupgrade $@
+	exit $?
+}
+
+lock /tmp/afiupgrade.lock
+
+echo "<6> Starting update ($IMAGE)" > /dev/kmsg
+
+uh-fw-tool -f $IMAGE || {
+	lock -u /tmp/afiupgrade.lock
+	exit 1
+}
+
+graceful_restart
+
+exit 0

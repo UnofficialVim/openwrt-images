@@ -1,0 +1,7 @@
+echo "Content-type: text/html"
+echo "Cache-Control: no-cache, no-store, must-revalidate"
+echo "Pragma: no-cache"
+echo "Expires: 0"
+echo ""
+echo "<!DOCTYPE html>"
+echo "<html lang='en'>"

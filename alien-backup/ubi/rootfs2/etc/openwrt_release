@@ -1,0 +1,8 @@
+DISTRIB_ID='AFi-ALN-R'
+DISTRIB_RELEASE='4.0.7'
+DISTRIB_REVISION='0-g068e8825'
+DISTRIB_CODENAME='emperor_emerald'
+DISTRIB_TARGET='ipq807x/generic'
+DISTRIB_ARCH='aarch64_cortex-a53_neon-vfpv4'
+DISTRIB_DESCRIPTION='AFi-ALN-R Emperor Emerald 4.0.7 4.0.7'
+DISTRIB_TAINTS='no-all busybox'

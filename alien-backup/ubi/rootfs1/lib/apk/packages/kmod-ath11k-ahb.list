@@ -1,0 +1,2 @@
+/etc/modules.d/ath11k-ahb
+/lib/modules/6.12.63/ath11k_ahb.ko

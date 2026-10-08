@@ -1,0 +1,2 @@
+/etc/modules.d/34-ifb
+/lib/modules/6.12.63/ifb.ko

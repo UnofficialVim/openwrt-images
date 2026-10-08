@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="41px" height="28px" viewBox="0 0 41 28" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 42 (36781) - http://www.bohemiancoding.com/sketch -->
+    <title>envelope</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="1st-scenerio" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Setup" transform="translate(-1025.000000, -649.000000)" fill-rule="nonzero">
+            <g id="envelope" transform="translate(1025.966125, 649.000000)">
+                <g id="Group">
+                    <path d="M36,0 L4,0 C1.791,0 0,1.791 0,4 L0,24 C0,26.209 1.791,28 4,28 L36,28 C38.209,28 40,26.209 40,24 L40,4 C40,1.791 38.209,0 36,0 Z" id="Shape" fill="#009688"></path>
+                    <path d="M40,4.025 C40,3.56 39.905,3.121 39.76,2.705 L20,17.025 L0.241,2.705 C0.095,3.121 0,3.561 0,4.025 L0,5 L20,19.495 L40,5 L40,4.025 Z" id="Shape" fill="#FFFFFF"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

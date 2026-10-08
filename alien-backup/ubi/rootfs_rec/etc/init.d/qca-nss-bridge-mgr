@@ -1,0 +1,26 @@
+#!/bin/sh  /etc/rc.common
+
+START=05
+STOP=95
+
+boot()
+{
+        local MODULESD_TMP="/tmp/modules.d/"
+        local MODULESD_TMP_FILE="/tmp/modules.d/51-qca-nss-drv-bridge-mgr"
+        local wan_if
+
+        [ -e /lib/functions.sh ] && . /lib/functions.sh || . ./functions.sh
+
+        config_load "network"
+        config_get wan_if wan ifname "none"
+
+        # Provide original module name
+        mkdir -p $MODULESD_TMP
+        echo "qca-nss-bridge-mgr" > $MODULESD_TMP_FILE
+
+        [ "$wan_if" != "none" ] && {
+                echo "qca-nss-bridge-mgr g_wan_ifname=$wan_if" > $MODULESD_TMP_FILE
+        }
+
+        # Do nothing here. Symbolic link in /etc/modules.d is created in Makefile.
+}

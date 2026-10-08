@@ -1,0 +1,10 @@
+Package: cfg-tool
+Version: 84bb125e173e20c7d06b5dbf744be1216ddc879a-1
+Depends: libc, libopenssl1.1, ubnt-meta
+Source: package/ubiquiti/cfg-tool
+SourceName: cfg-tool
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 4928
+Description:  Tool for reading / writing cfg mtd partition

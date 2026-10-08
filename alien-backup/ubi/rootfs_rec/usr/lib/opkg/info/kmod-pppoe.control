@@ -1,0 +1,10 @@
+Package: kmod-pppoe
+Version: ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1
+Depends: kernel (=ssh___git_rix_hive_corp_ubnt_com_mirror_qca_linux_msm-3ddac1f2f4-1-fd934c554aad627bdf4c999715b5fc37), kmod-ppp, kmod-pppox
+Source: package/kernel/linux
+SourceName: kmod-pppoe
+License: GPL-2.0
+Section: kernel
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 7536
+Description:  Kernel module for PPPoE (PPP over Ethernet) support

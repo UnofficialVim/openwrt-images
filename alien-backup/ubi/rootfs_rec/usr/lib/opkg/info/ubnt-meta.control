@@ -1,0 +1,10 @@
+Package: ubnt-meta
+Version: 1.0.0-1
+Depends: libc, busybox
+Source: package/ubiquiti/ubnt-meta
+SourceName: ubnt-meta
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 105
+Description:  Meta package to enable misc settings

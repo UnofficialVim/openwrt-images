@@ -1,0 +1,13 @@
+board.json
+config
+dropbear
+misc
+shadow
+tinc
+ssl/private/amplifi.key
+ssl/private/uimqtt.key
+ssl/certs/amplifi.cert
+ssl/certs/uimqtt.cert
+sysctl.conf
+uhttpd.crt
+uhttpd.key

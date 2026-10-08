@@ -1,0 +1,27 @@
+#!/bin/sh /etc/rc.common
+
+START=70
+
+USE_PROCD=1
+NAME=fwupdate
+PROG=/usr/sbin/fwupdated
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$PROG" -f
+	procd_set_param respawn 3600 180 0
+	procd_close_instance
+}
+
+stop() {
+	service_stop $PROG
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger "fwupdate"
+}
+
+reload_service() {
+	killall -HUP fwupdated
+}

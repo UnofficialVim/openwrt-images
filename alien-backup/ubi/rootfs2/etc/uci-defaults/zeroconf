@@ -1,0 +1,13 @@
+#!/bin/sh
+
+uci -q show network.zc &> /dev/null && exit 0
+
+uci batch <<EOF
+add network interface
+rename network.@interface[-1]='zc'
+set network.zc.ifname='br-lan'
+set network.zc.proto='zeroconf'
+commit network
+EOF
+
+exit 0

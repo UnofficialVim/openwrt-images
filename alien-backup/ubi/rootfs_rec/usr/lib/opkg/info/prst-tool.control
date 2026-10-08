@@ -1,0 +1,10 @@
+Package: prst-tool
+Version: 918220c755-1
+Depends: libc, libopenssl1.1
+Source: package/ubiquiti/prst-tool
+SourceName: prst-tool
+Section: Ubiquiti
+Maintainer: Ansis <ansis@ubnt.com>
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 3397
+Description:  LCD/LED controller

@@ -1,0 +1,33 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+USE_PROCD=1
+NAME=dnsmasq_wd
+PROG=/usr/sbin/dnsmasq_wd.sh
+
+service_triggers()
+{
+	# Use DHCP config because:
+	# - it is not changing often
+	# - it is always changing on node role change - router/extender
+	procd_add_reload_trigger "dhcp"
+}
+
+start_service() {
+	[ "$(uci -q get ajconfd.@device_config[0].node_role)" = "router" ] || return
+	[ "$(uci -q get ajconfd.@site_config[0].wan_bridge_mode)" = "1" ] && return
+	[ "$(uci -q get ajconfd.@site_config[0].bypass_dns_cache)" = "1" ] && return
+
+	procd_open_instance
+	procd_set_param command "$PROG"
+	procd_close_instance
+}
+
+stop() {
+	service_stop $PROG
+}
+
+reload_service() {
+	restart
+}

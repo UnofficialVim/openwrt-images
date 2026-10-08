@@ -1,0 +1,122 @@
+PATH=/www/inc:$PATH
+SHORTNAME="$(cat /proc/ubnthal/board | grep shortname | cut -d '=' -f2 2>/dev/null)"
+[ "$SHORTNAME" = "AFi-T" ] && PNAME="AmpliFi Teleport" || PNAME="AmpliFi"
+SUPPORT_PHONE="+1 (855) 906-8585"
+SUPPORT_EMAIL="help@amplifi.com"
+SUPPORT_SITE="help.amplifi.com"
+FWFILEDOWNL="/tmp/firmware.bin"
+FWFILE="/tmp/uploaded-firmware.bin"
+TMPFILE=$FWFILE.tmp
+DEBUGLOG="/tmp/webui.debug.log"
+SETUPSSID="/tmp/webui.ssidsetup"
+SETUPFILE="/tmp/webui.initial-setup"
+RETURNURL="/tmp/webui.returnurl"
+TELEPORTAP="/tmp/webui.configureTeleportAp"
+AFITOOLLOG="/tmp/afitool.log"
+SELECTED_SSID="/tmp/webui.selected_ssid"
+WIFIPASSWORDCHECKLOCK="/tmp/webui.password_check.lock"
+WIFIPASSWORDCHECKRESULT="/tmp/webui.password_check_result"
+WIFIPASSWORDCHECKFAIL="/tmp/webui.password_check_fail"
+CONFIGMODELOCK="/tmp/webui.config_mode.lock"
+AFIID=$(uci get ajconfd.@device_config[0].friendly_name 2>/dev/null)
+REMOTE_ADDR=$(env | grep "REMOTE_ADDR" | cut -d = -f2)
+[ "$(prst_tool -r misc 2> /dev/null | grep -iq SSH; echo "$?")" != "1" ] && DEV_MODE=1 || DEV_MODE=0
+[ -z "$AFIID" ] && AFIID=$(uci get system.@system[0].hostname)
+
+TOKENFILE="/tmp/webui.token"
+if [ ! -s "$TOKENFILE" ] || [ "$(grep -Eq "^$REMOTE_ADDR" "$TOKENFILE"; echo "$?")" != "0" ]; then
+	echo "$REMOTE_ADDR $(head -n3 /dev/urandom | md5sum | cut -c1-16)" >> "$TOKENFILE"
+fi
+TOKEN="$(grep -E "^$REMOTE_ADDR" "$TOKENFILE" | tail -n1 | cut -d ' ' -f2-)"
+TOKENGET="$(echo "$TOKEN" | md5sum | cut -c1-16)"
+
+# remove newlines from GET query string
+QUERY_STRING=$(echo -n "$QUERY_STRING" | sed -e 's/%0[a|A]//g')
+
+SESSION="invalid"
+# ajconfd is not available in Recovery mode
+if [ ! -f "/etc/init.d/recovery" ]; then
+	# Deny access if client has public IP address and it is in different /24 subnet than router's WAN interface
+	if [ "$(echo "$REMOTE_ADDR" | grep -Eq '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|169\.254\.)' || echo 1 )" ]; then
+		. /usr/share/libubox/jshn.sh
+		json="$(ubus call ajconfd.Device GetNetworkConfig 2>/dev/null)"
+		json_load "$json" > /dev/null
+		json_get_var wan_runtime_ipaddr "Wan runtime IP address"
+		json_cleanup
+		wan_runtime_ipaddr="$(echo "$wan_runtime_ipaddr" | cut -d '/' -f1)"
+		if [ "$(echo "$wan_runtime_ipaddr" | sed '$s/\d*$//')" != "$(echo "$REMOTE_ADDR" | sed '$s/\d*$//')" ]; then
+			logger "uhttpd: Access denied. Local IP $wan_runtime_ipaddr, remote IP $REMOTE_ADDR."
+			sleep 1
+			echo "Content-type: text/html"
+			echo "Cache-Control: no-cache, no-store, must-revalidate"
+			echo "Pragma: no-cache"
+			echo "Expires: 0"
+			echo ""
+			echo "<h1>Access denied</h1>"
+			exit
+		fi
+	fi
+
+
+	if [ -n "$HTTP_COOKIE" ]; then
+		cookie_session=`echo "$HTTP_COOKIE" | sed -n 's/^.*webui-session=//p' | cut -d';' -f1`
+
+		. /usr/share/libubox/jshn.sh
+		json=`ubus call session list | tr '\n' '\r' | sed  -e 's/}\r{/},{/g' | tr '\r' '\n'`
+		json='{"session_list": ['"$json"']}'
+		json_load "$json" > /dev/null
+		json_select "session_list" > /dev/null
+		json_get_keys keys
+		for k in $keys; do
+			json_select "$k"
+			json_get_var ubus_rpc_session "ubus_rpc_session"
+			json_get_var session_expires "expires"
+			json_select "data"
+			json_get_var data_username "username"
+
+			if [ "$data_username" = "ubnt" -a "$ubus_rpc_session" != "00000000000000000000000000000000" -a "$session_expires" -gt 0 ]; then
+				if [ "$cookie_session" = "$ubus_rpc_session" ]; then
+					SESSION="$cookie_session"
+					ubus call session set '{"ubus_rpc_session":"'"$SESSION"'", "values": {"refresh": 1 }}'
+					break
+				fi
+			fi
+			json_select ..
+			json_select ..
+		done
+		json_cleanup
+	fi
+fi
+
+# SET DEFAULT FEATURE AVAILABILITY
+
+FEATURE_HNAT=1
+FEATURE_TURBOMODE=0
+FEATURE_QOS=0
+FEATURE_80211r=1
+FEATURE_AMSDUB=1
+FEATURE_AMSDUC=1
+FEATURE_BACKUP=1
+
+# ADJUST AVAILABLE FEATURES
+
+[ "$SHORTNAME" = "AFi-INS-R" -o "$SHORTNAME" = "AFi-INS-R-G" -o "$SHORTNAME" = "AFi-ALN-R" ] && FEATURE_HNAT=0
+[ "$SHORTNAME" = "AFi-R-G"   -o "$SHORTNAME" = "AFi-INS-R-G" -o "$SHORTNAME" = "AFi-ALN-R" ] && FEATURE_QOS=1
+[ "$SHORTNAME" = "AFi-ALN-R" ] && FEATURE_AMSDUB=0 && FEATURE_AMSDUC=0
+[ "$DEV_MODE" = "1" ] && FEATURE_QOS=1
+
+firmwareVersion="$(cat /etc/openwrt_release | grep -m1 DISTRIB_RELEASE | cut -d'=' -f2 | tr -d "'")"
+
+if [ "$(echo -n "$firmwareVersion" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"; echo "$?")" = "0" ]; then # if release
+	BUILT_TYPE="release"
+	FEATURE_AMSDUB=0
+	FEATURE_80211r=0
+elif [ "$(echo -n "$firmwareVersion" | grep -qE "^([0-9]+\.){1,2}[0-9]+\.?beta"; echo "$?")" = "0" ]; then # if beta build
+	BUILT_TYPE="beta"
+elif [ "$(echo -n "$firmwareVersion" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+rc[0-9]+"; echo "$?")" = "0" ]; then # if rc build
+	BUILT_TYPE="rc"
+elif [ "$(echo -n "$firmwareVersion" | grep -qE "^[0-9]+\.[0-9]+\.x$"; echo "$?")" = "0" ]; then # if development build
+	BUILT_TYPE="dev"
+else # unknown build type
+	BUILT_TYPE="unknown"
+fi

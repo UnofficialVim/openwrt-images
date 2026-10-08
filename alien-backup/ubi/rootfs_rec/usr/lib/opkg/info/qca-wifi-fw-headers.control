@@ -1,0 +1,10 @@
+Package: qca-wifi-fw-headers
+Version: 708de0a950-1
+Depends: libc
+Source: package/qca/qca-wifi-fw-headers
+SourceName: qca-wifi-fw-headers
+Section: QCA
+Maintainer: Qualcomm Atheros
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Installed-Size: 105
+Description:  This package contains the qca-wifi firmware headers used in 10.x drivers

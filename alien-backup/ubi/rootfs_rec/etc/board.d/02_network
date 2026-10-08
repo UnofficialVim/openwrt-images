@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# Copyright (c) 2018 Ubiquiti Networks
+#
+
+. /lib/functions/uci-defaults.sh
+. /lib/functions/system.sh
+. /lib/functions/board.sh
+. /lib/functions/afi.sh
+
+get_rand()
+{
+	local min="$1"
+	local max="$2"
+	local seed=`dd if=/dev/urandom bs=2 count=1 2>/dev/null | hexdump -e '/2 "%u\n"'`
+	local rand=`awk -v min=$min -v max=$max "BEGIN{srand($seed); print int(min+rand()*(max-min+1))}"`
+	echo $rand
+}
+
+uhdef_set_interface_lan() {
+	local ifname=$1
+	local rand=$(get_rand 100 200)
+	local ip="192.168.$rand.1"
+
+	ucidef_set_interface "lan" \
+				ifname "$ifname" \
+				protocol "static" \
+				ipaddr "$ip" \
+				netmask "255.255.255.0"
+}
+
+uhdef_set_interface_guest() {
+	local ifname=$1
+	local rand=$(get_rand 201 250)
+	local ip="192.168.$rand.1"
+
+	ucidef_set_interface "guest" \
+				ifname " " \
+				protocol "static" \
+				ipaddr "$ip" \
+				netmask "255.255.255.0"
+}
+
+board_config_update
+
+board=$(board_name)
+
+case "$board" in
+qcom,ap-hk01 |\
+ubiquiti,afi-aln-r)
+	ucidef_set_interface_wan "eth4"
+	uhdef_set_interface_lan "eth0 eth1 eth2 eth3"
+	uhdef_set_interface_guest
+	;;
+ubiquiti,afi-aln-p)
+	uhdef_set_interface_lan "eth0"
+	uhdef_set_interface_guest
+	;;
+*)
+	echo "Unsupported hardware. Network interfaces not intialized"
+	;;
+esac
+
+board_config_flush
+
+exit 0

@@ -1,0 +1,84 @@
+#!/bin/sh
+
+STATS_MOUNTPOINT=/tmp/stats
+
+mount_stats() {
+    mount -t ubifs ubi0:stats -o chk_data_crc $STATS_MOUNTPOINT
+    return $?
+}
+
+migrate_stats() {
+    echo "Starting migration of stats volume" > /dev/kmsg
+
+    # Copy data and unmount
+    mkdir -p /tmp/stats_migrate
+    cp /tmp/stats/* /tmp/stats_migrate
+    umount $STATS_MOUNTPOINT
+
+    # Get space for new partition
+    ubirmvol /dev/ubi0 -N "crash_data" &> /dev/null
+    ubirmvol /dev/ubi0 -N "stats"
+
+    # 256MB boards
+    local stats_size=116MiB
+
+    # 128MB boards
+    ubinfo /dev/ubi0 | grep -q "logical.*blocks.*2048" || stats_size=12MiB
+
+    ubimkvol /dev/ubi0 -s $stats_size -N stats
+
+    mount_stats || {
+        echo "ERROR: Could not remount stats volume when migrating. Extraneous volumes?" \
+             > /dev/kmsg
+        ubinfo /dev/ubi0 > /dev/kmsg
+        return 1
+    }
+
+    for f in /tmp/stats_migrate/*.dat; do
+        [ -s $f ] || continue
+
+        printf "\x1f\x8b\x08\x00\x00\x00\x00\x00" > $f.gz
+        dd if=$f bs=1 skip=48 2>/dev/null >> $f.gz
+
+        [ -s $f.gz ] && gzip -dc $f.gz 2>/dev/null > ${f%.*}
+
+        rm -f $f $f.gz
+        mv ${f%.*} /tmp/stats
+    done
+
+    rm -rf /tmp/stats_migrate
+
+    ls -l /tmp/stats > /dev/kmsg
+    echo "Migration of stats volume complete" > /dev/kmsg
+}
+
+do_mount_stats() {
+	local ubivolid=`ubinfo /dev/ubi0 -N stats 2> /dev/null | awk '/Volume/{print $3}'`
+    local device=/dev/ubi0_$ubivolid
+    mkdir -p $STATS_MOUNTPOINT
+
+    if [ -z $ubivolid ]; then
+        echo "Could not find stats volume!" > /dev/kmsg
+        return 0
+    fi
+
+    mount_stats || {
+        echo "Could not mount stats volume, truncating" > /dev/kmsg
+
+        # Truncate
+        /usr/sbin/ubiupdatevol $device -t
+
+        # Try again
+        mount_stats || {
+            echo "Could not mount stats volume after truncating" > /dev/kmsg
+            return 0
+        }
+    }
+
+    # Migrate
+    ubinfo /dev/ubi0 -N stats | grep -q "8.1 MiB" && {
+        migrate_stats || echo "Stats migrate error" > /dev/kmsg
+    }        
+}
+
+[ "$INITRAMFS" = "1" ] || boot_hook_add preinit_main do_mount_stats

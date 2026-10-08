@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="17px" height="131px" viewBox="0 0 17 131" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>meter-hand</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#2196F3" offset="0%"></stop>
+            <stop stop-color="#2196F3" offset="98.0747768%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Ethernet-Copy-6" transform="translate(-991.000000, -533.000000)">
+            <g id="meter-hand" transform="translate(991.000000, 533.000000)">
+                <path d="M5.12659683,114.695708 C2.11036053,116.001248 0,119.004173 0,122.5 C0,127.19442 3.80557963,131 8.5,131 C13.1944204,131 17,127.19442 17,122.5 C17,119.004173 14.8896395,116.001248 11.8734032,114.695708 L8.5,0 L5.12659683,114.695708 Z" id="Combined-Shape" fill="url(#linearGradient-1)"></path>
+                <circle id="Oval-4" stroke="#FFFFFF" stroke-width="2" fill="#2196F3" cx="8.5" cy="122.5" r="3.5"></circle>
+            </g>
+        </g>
+    </g>
+</svg>
